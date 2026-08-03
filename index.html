@@ -47,6 +47,7 @@
     -webkit-tap-highlight-color:transparent;
   }
   button,.chip,.lvl{-webkit-user-select:none;user-select:none}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
   .wrap{max-width:520px;margin:0 auto;padding:0 14px}
   .num{font-variant-numeric:tabular-nums}
   .display{font-family:ui-rounded,-apple-system,"Segoe UI",system-ui,sans-serif}
@@ -223,6 +224,10 @@
   .sale .act{display:flex;gap:2px}
   .sale .act button{background:none;border:none;font-size:15px;padding:6px;cursor:pointer;color:var(--muted);border-radius:8px}
   .sale .act button:hover{color:var(--ink)}
+  .vermas{
+    width:100%;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:12px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
   .empty{
     text-align:center;color:var(--muted);padding:30px 20px 34px;border:1.5px dashed var(--line);
     border-radius:16px;font-size:14.5px;
@@ -601,11 +606,13 @@
   let view={y:now.getFullYear(), m:now.getMonth()}; // m: 0-11
   let editingId=null;
   let lastAddedId=null;
+  let verTodas=false;
 
   /* ===== Utilidades ===== */
-  const fmtEUR=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
-  const fmtEUR0=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
-  const fmtNum=new Intl.NumberFormat("es-ES");
+  // useGrouping "always" para que 1.620 € y 16.001 € se escriban igual
+  const fmtEUR=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",useGrouping:"always"});
+  const fmtEUR0=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0,useGrouping:"always"});
+  const fmtNum=new Intl.NumberFormat("es-ES",{useGrouping:"always"});
   const fmtPct=new Intl.NumberFormat("es-ES",{maximumFractionDigits:1});
   const fmtMult=new Intl.NumberFormat("es-ES",{maximumFractionDigits:2});
   // El email trunca cada parte a céntimos (309,375 -> 309,37), así que hacemos lo mismo
@@ -736,11 +743,23 @@
   /* ===== Render ===== */
   const $=id=>document.getElementById(id);
 
+  // Último mes al que se puede navegar: el actual, o el de la venta más lejana
+  function maxMes(){
+    let y=now.getFullYear(), m=now.getMonth();
+    state.ventas.forEach(v=>{
+      const vy=+v.date.slice(0,4), vm=+v.date.slice(5,7)-1;
+      if(vy>y||(vy===y&&vm>m)){ y=vy; m=vm; }
+    });
+    return {y,m};
+  }
+
   function render(){
     const c=computeMonth(view.y,view.m);
     $("monthTitle").textContent=monthName(view.y,view.m);
     const isCurrent = view.y===now.getFullYear()&&view.m===now.getMonth();
-    $("nextM").disabled = view.y>now.getFullYear() || (view.y===now.getFullYear()&&view.m>=now.getMonth());
+    // Se puede avanzar hasta el mes actual, o más allá si hay ventas con fecha futura
+    const lim=maxMes();
+    $("nextM").disabled = view.y>lim.y || (view.y===lim.y&&view.m>=lim.m);
 
     // Hero
     setTotal(c.total);
@@ -775,7 +794,8 @@
     if(isCurrent&&(c.fact>0||c.score>0)){
       const day=today.getDate();
       const dim=new Date(view.y,view.m+1,0).getDate();
-      if(day>=3&&day<dim){
+      // Con menos de una semana los datos dan proyecciones disparatadas
+      if(day>=7&&day<dim){
         const pr=computeTotals(c.fact/day*dim, c.score/day*dim, c.pctCare, c.pctSeg);
         projHtml="A este ritmo acabarás el mes con <b class=\"num\">~"+fmtEUR0.format(pr.total)+"</b>";
       }
@@ -849,7 +869,7 @@
 
   $("trend").addEventListener("click",e=>{
     const b=e.target.closest(".tcol"); if(!b) return;
-    view={y:+b.dataset.y,m:+b.dataset.m};
+    view={y:+b.dataset.y,m:+b.dataset.m}; verTodas=false;
     resetForm(); render();
     window.scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"});
   });
@@ -960,8 +980,12 @@
       box.innerHTML='<div class="empty"><div class="eicon">€</div><b>Sin ventas este mes</b>Añade tu primera venta con el formulario de arriba.</div>';
       return;
     }
+    // Con muchas ventas la página se hace infinita: mostramos las últimas
+    const TOPE=25;
+    const visibles=verTodas?c.ventas:c.ventas.slice(0,TOPE);
+    const ocultas=c.n-visibles.length;
     const byDay={};
-    c.ventas.forEach(v=>{ (byDay[v.date]=byDay[v.date]||[]).push(v); });
+    visibles.forEach(v=>{ (byDay[v.date]=byDay[v.date]||[]).push(v); });
     let html="";
     Object.keys(byDay).sort().reverse().forEach(d=>{
       const list=byDay[d];
@@ -980,13 +1004,17 @@
           +(v.note?'<span class="note">'+esc(v.note)+"</span>":"")
           +"</div>"
           +'<div class="act">'
-          +'<button data-edit="'+v.id+'" aria-label="Editar">✎</button>'
-          +'<button data-del="'+v.id+'" aria-label="Borrar">✕</button>'
+          +'<button data-edit="'+esc(v.id)+'" aria-label="Editar">✎</button>'
+          +'<button data-del="'+esc(v.id)+'" aria-label="Borrar">✕</button>'
           +"</div></div>";
       });
       html+="</div>";
     });
+    if(ocultas>0) html+='<button class="vermas" id="verMas">Ver las '+ocultas+" ventas restantes</button>";
+    else if(verTodas&&c.n>TOPE) html+='<button class="vermas" id="verMenos">Mostrar menos</button>';
     box.innerHTML=html;
+    const vm=$("verMas")||$("verMenos");
+    if(vm) vm.onclick=()=>{ verTodas=!verTodas; renderList(computeMonth(view.y,view.m)); };
     lastAddedId=null;
   }
 
@@ -1098,8 +1126,8 @@
   });
 
   /* ===== Navegación de mes ===== */
-  $("prevM").onclick=()=>{ view.m--; if(view.m<0){view.m=11;view.y--;} resetForm(); render(); };
-  $("nextM").onclick=()=>{ view.m++; if(view.m>11){view.m=0;view.y++;} resetForm(); render(); };
+  $("prevM").onclick=()=>{ view.m--; if(view.m<0){view.m=11;view.y--;} verTodas=false; resetForm(); render(); };
+  $("nextM").onclick=()=>{ view.m++; if(view.m>11){view.m=0;view.y++;} verTodas=false; resetForm(); render(); };
 
   /* ===== Override attach manual ===== */
   let ovKey=null;
@@ -1218,7 +1246,7 @@
   $("btnImport").onclick=()=>$("fileImport").click();
   function sanitizeVentas(arr){
     return arr.filter(v=>v&&typeof v==="object").map(v=>({
-      id:String(v.id||uid()),
+      id:String(v.id||"").replace(/[^A-Za-z0-9_-]/g,"")||uid(),
       date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:todayISO(),
       ts:Number(v.ts)||0,
       amount:Number(v.amount)||0,
