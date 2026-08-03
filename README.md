@@ -55,6 +55,9 @@ escribir el % a mano con el botón ✎ de cada ficha.
 ## Funciones
 
 - Alta de venta en segundos: importe, score y botones CARE / SEGURO.
+- Apunte de **accesorios**: suman a facturación y score, pero quedan fuera del
+  cálculo de los porcentajes de attach (no los diluyen) y no admiten
+  CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
 - Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €".
 - Progreso hacia el siguiente tramo de facturación, score y attach.

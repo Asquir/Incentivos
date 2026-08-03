@@ -36,6 +36,7 @@
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg); color:var(--ink);
@@ -164,6 +165,14 @@
   }
   .field input:focus{outline:none;border-color:var(--gold)}
   .field input::placeholder{color:var(--muted);opacity:.55;font-weight:500}
+  /* Selector Venta / Accesorio (los accesorios no cuentan para el attach) */
+  .seg{display:flex;background:var(--surface2);border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px;margin-bottom:13px}
+  .seg button{
+    flex:1;border:none;background:none;border-radius:9px;padding:9px 6px;font-size:14px;
+    font-weight:800;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .18s ease;
+  }
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.13)}
+  .accnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
   .toggles{display:flex;gap:10px;margin-top:12px}
   .tog{
     flex:1;border:1.5px solid var(--line);background:var(--surface2);color:var(--muted);
@@ -203,6 +212,7 @@
   .sale .meta{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:0}
   .chip{font-size:10.5px;font-weight:800;border-radius:6px;padding:2.5px 7px;letter-spacing:.04em}
   .chip.score{background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+  .chip.acc{background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid var(--line);color:var(--muted)}
   .chip.care{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
   .chip.seg{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold-ink);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
   .sale .note{font-size:12px;color:var(--muted);flex-basis:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -394,6 +404,10 @@
 
   <section class="card" id="formCard">
     <h3 id="formTitle">Nueva venta</h3>
+    <div class="seg" id="segTipo" role="group" aria-label="Tipo de apunte">
+      <button type="button" id="segVenta" class="on">Venta</button>
+      <button type="button" id="segAcc">Accesorio</button>
+    </div>
     <div class="frow">
       <div class="field">
         <label for="fAmount">Importe (€)</label>
@@ -404,10 +418,11 @@
         <input id="fScore" type="text" inputmode="numeric" placeholder="0" autocomplete="off">
       </div>
     </div>
-    <div class="toggles">
+    <div class="toggles" id="togRow">
       <button class="tog" id="tCare" type="button">+ CARE</button>
       <button class="tog" id="tSeg" type="button">+ SEGURO</button>
     </div>
+    <p class="accnote" id="accNote" hidden>Suma a tu facturación y a tu score, pero no cuenta para los porcentajes de CARE y seguros.</p>
     <div class="row2">
       <div class="field">
         <label for="fNote">Nota (opcional)</label>
@@ -459,7 +474,10 @@
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
     <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
     <table id="infoAt"></table>
-    <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas totales del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
+    <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
+
+    <h4>Accesorios</h4>
+    <p>Los accesorios se apuntan con el botón <b>Accesorio</b> del formulario. Suman a tu facturación y a tu score igual que una venta, pero <b>no cuentan en el porcentaje de CARE ni de seguros</b>, así que no te bajan el attach.</p>
 
     <h4>Ejemplo del email</h4>
     <p class="num">55.000 € × 0,25 % = 137,50 € → × 2,25 (346 score) = 309,37 € → × 1,35 × 1,35 (48 % CARE, 45 % seguros) = <b>563,83 €</b></p>
@@ -697,15 +715,18 @@
     const fact=ventas.reduce((a,v)=>a+v.amount,0);
     const score=ventas.reduce((a,v)=>a+v.score,0);
     const n=ventas.length;
-    const nCare=ventas.filter(v=>v.care).length;
-    const nSeg=ventas.filter(v=>v.seguro).length;
+    // Los accesorios suman facturación y score, pero no entran en el attach
+    const nAcc=ventas.filter(v=>v.acc).length;
+    const nAt=n-nAcc;
+    const nCare=ventas.filter(v=>v.care&&!v.acc).length;
+    const nSeg=ventas.filter(v=>v.seguro&&!v.acc).length;
     const ov=state.overrides[mk]||{};
-    const autoCare=n?nCare/n*100:null;
-    const autoSeg=n?nSeg/n*100:null;
+    const autoCare=nAt?nCare/nAt*100:null;
+    const autoSeg=nAt?nSeg/nAt*100:null;
     const pctCare=(ov.care!=null)?ov.care:autoCare;
     const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
     const t=computeTotals(fact,score,pctCare,pctSeg);
-    return Object.assign({ventas,fact,score,n,nCare,nSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
+    return Object.assign({ventas,fact,score,n,nAcc,nAt,nCare,nSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
   }
 
   /* ===== Render ===== */
@@ -770,11 +791,13 @@
     }
 
     // Attach
-    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.n,c.mCare);
-    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.n,c.mSeg);
+    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc);
+    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc);
 
     // Lista
-    $("countSales").textContent=c.n?c.n+(c.n===1?" venta":" ventas"):"";
+    $("countSales").textContent=c.n
+      ?(c.nAt+(c.nAt===1?" venta":" ventas")+(c.nAcc?" · "+c.nAcc+(c.nAcc===1?" accesorio":" accesorios"):""))
+      :"";
     renderList(c);
 
     // Total estimado del año en vista
@@ -848,9 +871,9 @@
       if(manual||pct==null) return;
       const targ = pct<a.t1?a.t1 : (pct<a.t2?a.t2:null);
       if(targ==null||targ>=100) return;
-      // ventas nuevas con el servicio para llegar al tramo: (nOk+k)/(n+k) >= targ/100
-      const need=Math.max(1,Math.ceil((targ*c.n-100*nOk)/(100-targ)));
-      const nuevo=(nOk+need)/(c.n+need)*100;
+      // ventas nuevas con el servicio para llegar al tramo: (nOk+k)/(nAt+k) >= targ/100
+      const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
+      const nuevo=(nOk+need)/(c.nAt+need)*100;
       const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevo);
       const nombre=k==="care"?(need===1?"CARE":"CARE"):(need===1?"seguro":"seguros");
       opts.push({gain:t.total-c.total,total:t.total,txt:"Vende "+need+" "+nombre+" más"});
@@ -859,14 +882,14 @@
     return (opts[0]&&opts[0].gain>0.005)?opts[0]:null;
   }
 
-  function renderAttach(key,pct,auto,isManual,nOk,n,mult){
+  function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc){
     const v=$("v"+key), hint=$("h"+key), cnt=$("c"+key), a=cfg.at;
     if(pct==null){
       v.firstChild.textContent="— ";
       cnt.textContent="";
       setLvl("lvl"+key,"× "+fmtMult.format(a.m1),"low");
       setSteps("st"+key,3,0,false);
-      hint.textContent="Sin ventas todavía";
+      hint.textContent=nAcc?"Solo accesorios este mes":"Sin ventas todavía";
       return;
     }
     v.firstChild.textContent=fmtPct.format(pct)+" % ";
@@ -899,6 +922,7 @@
           +'<div class="amt num">'+fmtEUR.format(v.amount)+"</div>"
           +'<div class="meta">'
           +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
+          +(v.acc?'<span class="chip acc">ACCESORIO</span>':"")
           +(v.care?'<span class="chip care">CARE</span>':"")
           +(v.seguro?'<span class="chip seg">SEGURO</span>':"")
           +(v.note?'<span class="note">'+esc(v.note)+"</span>":"")
@@ -915,15 +939,26 @@
   }
 
   /* ===== Formulario ===== */
-  let togCare=false, togSeg=false;
+  let togCare=false, togSeg=false, esAcc=false;
   function refreshTogs(){
     $("tCare").className="tog"+(togCare?" on":"");
     $("tCare").textContent=(togCare?"✓ CARE":"+ CARE");
     $("tSeg").className="tog"+(togSeg?" on":"");
     $("tSeg").textContent=(togSeg?"✓ SEGURO":"+ SEGURO");
+    // Un accesorio no lleva CARE ni seguro: se ocultan en vez de estorbar
+    $("togRow").hidden=esAcc;
+    $("accNote").hidden=!esAcc;
+    $("segVenta").className=esAcc?"":"on";
+    $("segAcc").className=esAcc?"on":"";
+    if(!editingId){
+      $("btnSave").textContent=esAcc?"Añadir accesorio":"Añadir venta";
+      $("formTitle").textContent=esAcc?"Nuevo accesorio":"Nueva venta";
+    }
   }
   $("tCare").onclick=()=>{togCare=!togCare;refreshTogs();};
   $("tSeg").onclick=()=>{togSeg=!togSeg;refreshTogs();};
+  $("segVenta").onclick=()=>{ esAcc=false; refreshTogs(); };
+  $("segAcc").onclick=()=>{ esAcc=true; togCare=false; togSeg=false; refreshTogs(); };
 
   function refreshDateChip(){
     const v=$("fDate").value||todayISO();
@@ -936,7 +971,7 @@
     editingId=null;
     $("fAmount").value=""; $("fScore").value=""; $("fNote").value="";
     $("fDate").value=todayISO();
-    togCare=false; togSeg=false; refreshTogs(); refreshDateChip();
+    togCare=false; togSeg=false; esAcc=false; refreshTogs(); refreshDateChip();
     $("formTitle").textContent="Nueva venta";
     $("btnSave").textContent="Añadir venta";
     $("btnCancelEdit").hidden=true;
@@ -951,14 +986,15 @@
     const amt=isNaN(amount)?0:amount;
     const sc=isNaN(score)?0:score;
     if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
+    const acc=esAcc;
     const d=new Date(date+"T12:00:00");
     const pre=computeMonth(d.getFullYear(),d.getMonth());
     if(editingId){
       const v=state.ventas.find(x=>x.id===editingId);
-      if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.date=date; v.note=$("fNote").value.trim(); }
+      if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc; v.date=date; v.note=$("fNote").value.trim(); }
       lastAddedId=editingId;
     } else {
-      const nv={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,note:$("fNote").value.trim()};
+      const nv={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim()};
       state.ventas.push(nv);
       lastAddedId=nv.id;
     }
@@ -973,7 +1009,7 @@
       post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
       post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
     if(up){ confetti(); toast(up,null,null,4000); }
-    else toast(wasEditing?"Cambios guardados ✓":"Venta añadida ✓");
+    else toast(wasEditing?"Cambios guardados ✓":(acc?"Accesorio añadido ✓":"Venta añadida ✓"));
   };
 
   ["fAmount","fScore","fNote"].forEach(id=>{
@@ -1000,8 +1036,8 @@
       $("fScore").value=v.score?String(v.score):"";
       $("fNote").value=v.note||"";
       $("fDate").value=v.date;
-      togCare=!!v.care; togSeg=!!v.seguro; refreshTogs(); refreshDateChip();
-      $("formTitle").textContent="Editar venta";
+      togCare=!!v.care; togSeg=!!v.seguro; esAcc=!!v.acc; refreshTogs(); refreshDateChip();
+      $("formTitle").textContent=v.acc?"Editar accesorio":"Editar venta";
       $("btnSave").textContent="Guardar cambios";
       $("btnCancelEdit").hidden=false;
       $("formCard").scrollIntoView({behavior:"smooth",block:"center"});
@@ -1135,7 +1171,7 @@
       ts:Number(v.ts)||0,
       amount:Number(v.amount)||0,
       score:Number(v.score)||0,
-      care:!!v.care, seguro:!!v.seguro,
+      care:!!v.care, seguro:!!v.seguro, acc:!!v.acc,
       note:typeof v.note==="string"?v.note:""
     }));
   }
