@@ -795,7 +795,7 @@
     $("tip").className="tip"+(tipWarn?" warn":"");
     $("tip").hidden=!tipHtml;
 
-    // Proyección a fin de mes (solo mes en curso, a partir del día 3)
+    // Proyección a fin de mes (solo mes en curso, con al menos una semana de datos)
     const today=new Date();
     let projHtml="";
     if(isCurrent&&(c.fact>0||c.score>0)){
@@ -861,7 +861,11 @@
     $("trendBox").hidden=withData<2;
     if(withData<2) return;
     const max=Math.max(...months.map(x=>x.c.total),1);
-    $("trendSub").textContent="últimos 6 meses";
+    // "últimos 6 meses" solo es cierto en el mes actual; si se navega al pasado, se indica el rango
+    $("trendSub").textContent = (view.y===now.getFullYear()&&view.m===now.getMonth())
+      ? "últimos 6 meses"
+      : new Date(months[0].y,months[0].m,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","")
+        +" – "+new Date(view.y,view.m,1).toLocaleDateString("es-ES",{month:"short",year:"2-digit"}).replace(".","");
     $("trend").innerHTML=months.map(x=>{
       const h=x.c.total>0?Math.max(4,x.c.total/max*68):3;
       const isNow=x.y===view.y&&x.m===view.m;
@@ -1090,12 +1094,22 @@
     view={y:d.getFullYear(),m:d.getMonth()};
     resetForm(); render();
     const post=computeMonth(view.y,view.m);
+    // Una caída de tramo pesa más que una subida: se avisa aunque otra parte haya subido
+    const dCare=post.mCare<pre.mCare, dSeg=post.mSeg<pre.mSeg;
+    const down=
+      (dCare&&dSeg) ? "⚠️ CARE y seguros bajan a × "+fmtMult.format(post.mCare)
+                      +(post.mSeg!==post.mCare?" y × "+fmtMult.format(post.mSeg):"") :
+      dCare ? "⚠️ El attach de CARE baja a × "+fmtMult.format(post.mCare) :
+      dSeg ? "⚠️ El attach de seguros baja a × "+fmtMult.format(post.mSeg) :
+      post.tF.nivel<pre.tF.nivel ? "⚠️ Bajas al "+fmtMult.format(post.tF.pct)+" % de facturación" :
+      post.tS.nivel<pre.tS.nivel ? "⚠️ Bajas a × "+fmtMult.format(post.tS.mult)+" de score" : null;
     const up=
-      post.tF.nivel>pre.tF.nivel ? "🎉 ¡Nivel "+post.tF.nivel+" de facturación! Ahora al "+fmtMult.format(post.tF.pct*100)+" %" :
+      post.tF.nivel>pre.tF.nivel ? "🎉 ¡Nivel "+post.tF.nivel+" de facturación! Ahora al "+fmtMult.format(post.tF.pct)+" %" :
       post.tS.nivel>pre.tS.nivel ? "🎉 ¡Nivel "+post.tS.nivel+" de score! Multiplicas × "+fmtMult.format(post.tS.mult) :
       post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
       post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
-    if(up){ confetti(); toast(up,null,null,4000); }
+    if(down) toast(down,null,null,5000);
+    else if(up){ confetti(); toast(up,null,null,4000); }
     else toast(wasEditing?"Cambios guardados ✓":(acc?"Accesorio añadido ✓":"Venta añadida ✓"));
   };
 
@@ -1320,13 +1334,15 @@
     $("installTip").hidden=true;
     try{ localStorage.setItem("incentivos:tip","off"); }catch(e){}
   };
-  // Recordatorio de copia si hace más de 30 días (o nunca) y ya hay ventas apuntadas
+  // Recordatorio de copia si hace más de 30 días (o nunca) y ya hay ventas apuntadas.
+  // Espera un poco y no pisa un aviso en curso: es lo menos urgente de la app.
   setTimeout(()=>{
     if(!state.ventas.length) return;
+    if(document.getElementById("toast").classList.contains("show")) return;
     const last=state.lastExport;
     const days=last?(Date.now()-new Date(last+"T12:00:00").getTime())/86400000:999;
     if(days>30) toast("Haz una copia de tus ventas","Exportar",()=>$("btnExport").click(),8000);
-  },2500);
+  },9000);
 
   /* ===== Init ===== */
   resetForm();
