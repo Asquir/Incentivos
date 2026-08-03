@@ -56,12 +56,26 @@ escribir el % a mano con el botón ✎ de cada ficha.
 
 - Alta de venta en segundos: importe, score y botones CARE / SEGURO.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
+- Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €".
 - Progreso hacia el siguiente tramo de facturación, score y attach.
-- Historial por meses (navegación ‹ ›) y lista de ventas por día.
-- Editar y borrar ventas.
+- Historial por meses (navegación ‹ ›), lista de ventas por día y total
+  estimado del año.
+- Editar ventas, y borrar con botón Deshacer.
+- Compartir el resumen del mes (hoja de compartir de iOS / WhatsApp).
 - Exportar / importar copia de seguridad en JSON.
+- Funciona sin conexión una vez instalada (service worker), con icono
+  propio en la pantalla de inicio.
+
+## Publicar gratis para todo el equipo (GitHub Pages)
+
+1. En GitHub: **Settings → Pages → Deploy from a branch**, elegir la rama y
+   carpeta `/ (root)` y guardar.
+2. La app queda en `https://<usuario>.github.io/Incentivos/`.
+3. Cada persona la abre en su móvil y usa **Compartir → Añadir a pantalla de
+   inicio**. Los datos de cada uno se guardan solo en su dispositivo.
 
 ## Uso en el móvil
 
 Abrir la página y usar "Añadir a pantalla de inicio" (Compartir → Añadir a
-pantalla de inicio en iPhone) para tenerla como una app más.
+pantalla de inicio en iPhone) para tenerla como una app más, con icono
+propio y a pantalla completa.
