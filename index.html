@@ -150,6 +150,13 @@
   .tog.on{background:var(--good);border-color:var(--good);color:#fff}
   .row2{display:flex;gap:10px;margin-top:12px}
   .row2 .field input{font-size:16px;font-weight:600}
+  .datechip{
+    position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:12px;
+    padding:9px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface2);
+    color:var(--muted);font-size:13.5px;font-weight:700;cursor:pointer;
+  }
+  .datechip.set{border-color:var(--gold);color:var(--gold-ink)}
+  .dateoverlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:16px}
   button{touch-action:manipulation}
   .submit{
     width:100%;margin-top:14px;border:none;border-radius:14px;padding:15px;
@@ -250,6 +257,20 @@
   dialog[open]{animation:dlgIn .22s ease}
   @keyframes dlgIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
   #confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
+  .topsafe{
+    position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);z-index:80;
+    background:color-mix(in srgb,var(--bg) 80%,transparent);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  }
+  #fab{
+    position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:70;
+    width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--gold);color:#14222B;font-size:30px;font-weight:700;line-height:1;
+    box-shadow:0 6px 20px rgba(232,163,61,.45);
+    opacity:0;pointer-events:none;transform:translateY(12px) scale(.9);transition:all .25s ease;
+  }
+  #fab.show{opacity:1;pointer-events:auto;transform:none}
+  #fab:active{transform:scale(.92)}
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;animation:none !important}
   }
@@ -257,6 +278,7 @@
 </head>
 <body>
 
+<div class="topsafe" aria-hidden="true"></div>
 <div class="wrap">
   <header>
     <div class="brand">
@@ -331,14 +353,15 @@
     </div>
     <div class="row2">
       <div class="field">
-        <label for="fDate">Fecha</label>
-        <input id="fDate" type="date">
-      </div>
-      <div class="field">
         <label for="fNote">Nota (opcional)</label>
         <input id="fNote" type="text" placeholder="iPhone 15, funda…" autocomplete="off">
       </div>
     </div>
+    <label class="datechip" id="dateChip">
+      <span aria-hidden="true">📅</span>
+      <span id="dateChipTxt">Hoy</span>
+      <input id="fDate" type="date" class="dateoverlay" aria-label="Fecha de la venta">
+    </label>
     <button class="submit" id="btnSave">Añadir venta</button>
     <button class="cancel-edit" id="btnCancelEdit" hidden>Cancelar edición</button>
   </section>
@@ -425,6 +448,7 @@
   </div>
 </dialog>
 
+<button id="fab" aria-label="Nueva venta">+</button>
 <div id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
 
 <script>
@@ -740,15 +764,24 @@
   $("tCare").onclick=()=>{togCare=!togCare;refreshTogs();};
   $("tSeg").onclick=()=>{togSeg=!togSeg;refreshTogs();};
 
+  function refreshDateChip(){
+    const v=$("fDate").value||todayISO();
+    const isToday=v===todayISO();
+    $("dateChipTxt").textContent=isToday?"Hoy":new Date(v+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+    $("dateChip").classList.toggle("set",!isToday);
+  }
+
   function resetForm(){
     editingId=null;
     $("fAmount").value=""; $("fScore").value=""; $("fNote").value="";
     $("fDate").value=todayISO();
-    togCare=false; togSeg=false; refreshTogs();
+    togCare=false; togSeg=false; refreshTogs(); refreshDateChip();
     $("formTitle").textContent="Nueva venta";
     $("btnSave").textContent="Añadir venta";
     $("btnCancelEdit").hidden=true;
   }
+
+  $("fDate").addEventListener("change",refreshDateChip);
 
   $("btnSave").onclick=()=>{
     const amount=parseDec($("fAmount").value);
@@ -806,7 +839,7 @@
       $("fScore").value=v.score?String(v.score):"";
       $("fNote").value=v.note||"";
       $("fDate").value=v.date;
-      togCare=!!v.care; togSeg=!!v.seguro; refreshTogs();
+      togCare=!!v.care; togSeg=!!v.seguro; refreshTogs(); refreshDateChip();
       $("formTitle").textContent="Editar venta";
       $("btnSave").textContent="Guardar cambios";
       $("btnCancelEdit").hidden=false;
@@ -918,6 +951,18 @@
       save(); resetForm(); render();
       toast("Mes borrado");
     }
+  };
+
+  /* ===== Botón flotante: aparece cuando el formulario no está a la vista ===== */
+  const fab=$("fab");
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(es=>{
+      fab.classList.toggle("show",!es[0].isIntersecting);
+    },{threshold:.15}).observe($("formCard"));
+  }
+  fab.onclick=()=>{
+    $("formCard").scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"center"});
+    setTimeout(()=>$("fAmount").focus({preventScroll:true}),reducedMotion()?0:380);
   };
 
   /* ===== Init ===== */
