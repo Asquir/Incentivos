@@ -596,6 +596,13 @@
     }catch(e){}
     return {ventas:[], overrides:{}};
   }
+  // Copia previa a una acción destructiva, para poder deshacerla
+  function snapshot(){ return JSON.parse(JSON.stringify({state:state,cfg:cfg})); }
+  function restore(snap){
+    state=snap.state; cfg=snap.cfg;
+    save(); resetForm(); render();
+    toast("Restaurado ✓");
+  }
   function save(){
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast("⚠️ No se pudo guardar en el dispositivo"); }
@@ -1264,10 +1271,11 @@
         if(!d||!Array.isArray(d.ventas)) throw 0;
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
+          const snap=snapshot();
           state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport};
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
           save(); resetForm(); render();
-          toast("Copia importada ✓");
+          toast("Copia importada ✓","Deshacer",()=>restore(snap),8000);
         }
       }catch(_){ toast("⚠️ El archivo no es una copia válida"); }
       e.target.value="";
@@ -1278,11 +1286,12 @@
     const mk=monthKey(view.y,view.m);
     const n=state.ventas.filter(v=>v.date.startsWith(mk)).length;
     if(!n){ toast("Este mes no tiene ventas"); return; }
-    if(await ask("Borrar "+monthName(view.y,view.m),"Se borrarán las "+n+" ventas del mes. Esta acción no se puede deshacer.","Borrar todo",true)){
+    if(await ask("Borrar "+monthName(view.y,view.m),"Se borrarán las "+n+" ventas del mes.","Borrar todo",true)){
+      const snap=snapshot();
       state.ventas=state.ventas.filter(v=>!v.date.startsWith(mk));
       delete state.overrides[mk];
       save(); resetForm(); render();
-      toast("Mes borrado");
+      toast("Mes borrado","Deshacer",()=>restore(snap),8000);
     }
   };
 
