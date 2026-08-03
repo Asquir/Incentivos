@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mis Incentivos</title>
+<style>
+  :root{
+    --bg:#EFF2F1; --surface:#FFFFFF; --surface2:#F6F8F7; --ink:#16232B; --muted:#5C6B72;
+    --line:#DCE3E1; --gold:#E8A33D; --gold-ink:#96600F; --good:#1F8A66; --bad:#C64F3E;
+    --hero:#14222B; --hero-2:#1C3140; --hero-ink:#F2EFE7; --hero-muted:#9BB0BA;
+    --shadow:0 1px 2px rgba(22,35,43,.06), 0 8px 24px rgba(22,35,43,.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0E181E; --surface:#16232B; --surface2:#1C2C35; --ink:#ECF1EF; --muted:#8DA0A8;
+      --line:#263841; --gold:#E8A33D; --gold-ink:#F0B45C; --good:#3DBE8F; --bad:#E06A57;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#EFF2F1; --surface:#FFFFFF; --surface2:#F6F8F7; --ink:#16232B; --muted:#5C6B72;
+    --line:#DCE3E1; --gold:#E8A33D; --gold-ink:#96600F; --good:#1F8A66; --bad:#C64F3E;
+    --shadow:0 1px 2px rgba(22,35,43,.06), 0 8px 24px rgba(22,35,43,.07);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E181E; --surface:#16232B; --surface2:#1C2C35; --ink:#ECF1EF; --muted:#8DA0A8;
+    --line:#263841; --gold:#E8A33D; --gold-ink:#F0B45C; --good:#3DBE8F; --bad:#E06A57;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+    font-size:16px; line-height:1.45;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 14px}
+  .num{font-variant-numeric:tabular-nums}
+  .display{font-family:ui-rounded,-apple-system,"Segoe UI",system-ui,sans-serif}
+
+  /* ---------- Header ---------- */
+  header{padding:18px 0 10px}
+  .brand{display:flex;align-items:center;justify-content:space-between}
+  .brand h1{font-size:15px;margin:0;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .brand button{background:none;border:none;color:var(--muted);font-size:20px;padding:6px;cursor:pointer;border-radius:8px}
+  .monthbar{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .monthbar h2{margin:0;font-size:26px;font-weight:800}
+  .monthbar .nav{display:flex;gap:8px}
+  .monthbar button{
+    width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);font-size:18px;cursor:pointer;
+  }
+  .monthbar button:disabled{opacity:.35;cursor:default}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    margin-top:12px;border-radius:20px;padding:20px 18px 16px;color:var(--hero-ink);
+    background:linear-gradient(155deg,var(--hero-2) 0%,var(--hero) 55%);
+    box-shadow:var(--shadow);
+  }
+  .hero .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--hero-muted);font-weight:700}
+  .hero .total{font-size:52px;font-weight:800;color:var(--gold);line-height:1.1;margin:2px 0 4px;letter-spacing:-.01em}
+  .hero .total small{font-size:26px;font-weight:700}
+  .pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px}
+  .pipe{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+    border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;color:var(--hero-ink);
+    white-space:nowrap;
+  }
+  .pipe b{color:var(--gold);font-weight:700;white-space:nowrap}
+  .pipe .t{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--hero-muted);font-weight:700}
+  .arrow{color:var(--hero-muted);font-size:13px}
+
+  /* ---------- Stat tiles ---------- */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .tile{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 13px;box-shadow:var(--shadow);position:relative;
+  }
+  .tile .t{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .tile .v{font-size:22px;font-weight:800;margin-top:2px}
+  .tile .v small{font-size:13px;font-weight:600;color:var(--muted)}
+  .tile .hint{font-size:11.5px;color:var(--muted);margin-top:6px;min-height:16px}
+  .tile .hint b{color:var(--gold-ink)}
+  .bar{height:5px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);margin-top:8px;position:relative;overflow:hidden}
+  .bar i{position:absolute;inset:0;width:0%;background:var(--gold);border-radius:99px;transition:width .5s ease;z-index:1}
+  .bar i.good{background:var(--good)}
+  .bar .mark{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:var(--muted);opacity:.6;z-index:2}
+  .lvl{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 6px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);letter-spacing:.04em}
+  .lvl.on{background:var(--gold);border-color:var(--gold);color:#14222B}
+  .pencil{background:none;border:none;padding:2px 4px;cursor:pointer;font-size:13px;color:var(--muted);border-radius:6px}
+  .manual-flag{color:var(--gold-ink);font-size:10px;font-weight:700}
+
+  /* ---------- Add form ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 12px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800}
+  .frow{display:flex;gap:10px}
+  .field{flex:1;min-width:0}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input{
+    width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);
+    color:var(--ink);font-size:19px;font-weight:700;padding:11px 12px;font-variant-numeric:tabular-nums;
+    font-family:inherit;
+  }
+  .field input:focus{outline:none;border-color:var(--gold)}
+  .field input::placeholder{color:var(--muted);opacity:.55;font-weight:500}
+  .toggles{display:flex;gap:10px;margin-top:12px}
+  .tog{
+    flex:1;border:1.5px solid var(--line);background:var(--surface2);color:var(--muted);
+    border-radius:12px;padding:11px 6px;font-size:14px;font-weight:800;cursor:pointer;
+    letter-spacing:.03em;transition:all .15s ease;font-family:inherit;
+  }
+  .tog.on{background:var(--good);border-color:var(--good);color:#fff}
+  .row2{display:flex;gap:10px;margin-top:12px}
+  .row2 .field input{font-size:15px;font-weight:600}
+  .submit{
+    width:100%;margin-top:14px;border:none;border-radius:14px;padding:15px;
+    background:var(--gold);color:#14222B;font-size:17px;font-weight:800;cursor:pointer;
+    letter-spacing:.02em;font-family:inherit;transition:transform .1s ease;
+  }
+  .submit:active{transform:scale(.98)}
+  .cancel-edit{width:100%;margin-top:8px;border:none;background:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;padding:8px;font-family:inherit}
+
+  /* ---------- Sales list ---------- */
+  .list{margin-top:16px}
+  .list h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+  .list h3 span{font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+  .day{margin-bottom:14px}
+  .day .dh{font-size:12.5px;font-weight:700;color:var(--muted);margin:0 2px 6px;display:flex;justify-content:space-between}
+  .sale{
+    display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow);
+  }
+  .sale .amt{font-size:17px;font-weight:800;min-width:86px}
+  .sale .meta{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:0}
+  .chip{font-size:10.5px;font-weight:800;border-radius:6px;padding:2.5px 7px;letter-spacing:.04em}
+  .chip.score{background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+  .chip.care{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
+  .chip.seg{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold-ink);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+  .sale .note{font-size:12px;color:var(--muted);flex-basis:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sale .act{display:flex;gap:2px}
+  .sale .act button{background:none;border:none;font-size:15px;padding:6px;cursor:pointer;color:var(--muted);border-radius:8px}
+  .sale .act button:hover{color:var(--ink)}
+  .empty{
+    text-align:center;color:var(--muted);padding:34px 20px;border:1.5px dashed var(--line);
+    border-radius:16px;font-size:14.5px;
+  }
+  .empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{display:flex;gap:8px;margin-top:14px}
+  .toolbar button{
+    flex:1;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:12px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+
+  /* ---------- Modal ---------- */
+  dialog{
+    border:none;border-radius:20px;padding:0;background:var(--surface);color:var(--ink);
+    max-width:min(480px,calc(100vw - 28px));width:100%;box-shadow:0 24px 64px rgba(0,0,0,.35);
+  }
+  dialog::backdrop{background:rgba(10,18,23,.55);backdrop-filter:blur(3px)}
+  .mbody{padding:20px;max-height:78vh;overflow-y:auto}
+  .mbody h3{margin:0 0 4px;font-size:20px;font-weight:800}
+  .mbody .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .mbody h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-ink);margin:18px 0 6px;font-weight:800}
+  .mbody p{font-size:14px;margin:6px 0;color:var(--ink)}
+  .mbody table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .mbody th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--line)}
+  .mbody td{padding:6px 8px;border-bottom:1px solid var(--line)}
+  .mbody td:last-child,.mbody th:last-child{text-align:right;font-weight:700}
+  .mclose{
+    width:calc(100% - 40px);margin:0 20px 20px;border:none;border-radius:12px;padding:13px;
+    background:var(--surface2);border:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .ov-field{display:flex;align-items:center;gap:10px;margin:10px 0}
+  .ov-field label{flex:1;font-size:14px;font-weight:600}
+  .ov-field input{width:90px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);font-size:16px;font-weight:700;padding:8px 10px;text-align:right;font-family:inherit}
+  .ov-note{font-size:12.5px;color:var(--muted)}
+  .danger{color:var(--bad) !important}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important}
+  }
+  @keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .25s ease}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Mis incentivos</h1>
+      <button id="btnInfo" title="Cómo se calcula" aria-label="Cómo se calcula">ⓘ</button>
+    </div>
+    <div class="monthbar">
+      <h2 id="monthTitle" class="display">—</h2>
+      <div class="nav">
+        <button id="prevM" aria-label="Mes anterior">‹</button>
+        <button id="nextM" aria-label="Mes siguiente">›</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="label">Incentivo estimado del mes</div>
+    <div class="total display num" id="totalIncentivo">0,00 €</div>
+    <div class="pipeline" id="pipeline"></div>
+  </section>
+
+  <section class="tiles">
+    <div class="tile">
+      <div class="t">Facturación <span class="lvl" id="lvlFact">N1</span></div>
+      <div class="v num" id="vFact">0 €</div>
+      <div class="bar"><i id="barFact"></i></div>
+      <div class="hint" id="hFact"></div>
+    </div>
+    <div class="tile">
+      <div class="t">Score <span class="lvl" id="lvlScore">N1</span></div>
+      <div class="v num" id="vScore">0</div>
+      <div class="bar"><i id="barScore"></i></div>
+      <div class="hint" id="hScore"></div>
+    </div>
+    <div class="tile">
+      <div class="t">Attach CARE
+        <button class="pencil" id="editCare" aria-label="Editar % CARE">✎</button>
+      </div>
+      <div class="v num" id="vCare">— <small id="cCare"></small></div>
+      <div class="bar"><span class="mark" style="left:25%"></span><span class="mark" style="left:45%"></span><i id="barCare"></i></div>
+      <div class="hint" id="hCare"></div>
+    </div>
+    <div class="tile">
+      <div class="t">Attach SEGUROS
+        <button class="pencil" id="editSeg" aria-label="Editar % SEGUROS">✎</button>
+      </div>
+      <div class="v num" id="vSeg">— <small id="cSeg"></small></div>
+      <div class="bar"><span class="mark" style="left:25%"></span><span class="mark" style="left:45%"></span><i id="barSeg"></i></div>
+      <div class="hint" id="hSeg"></div>
+    </div>
+  </section>
+
+  <section class="card" id="formCard">
+    <h3 id="formTitle">Nueva venta</h3>
+    <div class="frow">
+      <div class="field">
+        <label for="fAmount">Importe (€)</label>
+        <input id="fAmount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="fScore">Score</label>
+        <input id="fScore" type="text" inputmode="numeric" placeholder="0" autocomplete="off">
+      </div>
+    </div>
+    <div class="toggles">
+      <button class="tog" id="tCare" type="button">+ CARE</button>
+      <button class="tog" id="tSeg" type="button">+ SEGURO</button>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="fDate">Fecha</label>
+        <input id="fDate" type="date">
+      </div>
+      <div class="field">
+        <label for="fNote">Nota (opcional)</label>
+        <input id="fNote" type="text" placeholder="iPhone 15, funda…" autocomplete="off">
+      </div>
+    </div>
+    <button class="submit" id="btnSave">Añadir venta</button>
+    <button class="cancel-edit" id="btnCancelEdit" hidden>Cancelar edición</button>
+  </section>
+
+  <section class="list">
+    <h3>Ventas del mes <span class="num" id="countSales"></span></h3>
+    <div id="salesList"></div>
+  </section>
+
+  <div class="toolbar">
+    <button id="btnExport">Exportar copia</button>
+    <button id="btnImport">Importar</button>
+    <button id="btnWipe" class="danger">Borrar mes</button>
+  </div>
+  <input type="file" id="fileImport" accept="application/json" hidden>
+</div>
+
+<dialog id="dlgInfo">
+  <div class="mbody">
+    <h3>Cómo se calcula</h3>
+    <p class="sub">Fórmula de incentivos en 3 partes. El resultado de cada parte alimenta a la siguiente.</p>
+
+    <h4>Parte 1 · Cuantitativa (ventas)</h4>
+    <p>Tu facturación del mes se multiplica por un porcentaje según el tramo alcanzado:</p>
+    <table>
+      <tr><th>Nivel</th><th>Facturación</th><th>%</th></tr>
+      <tr><td>1</td><td class="num">0 – 5.000 €</td><td class="num">0,00 %</td></tr>
+      <tr><td>2</td><td class="num">5.001 – 20.000 €</td><td class="num">0,10 %</td></tr>
+      <tr><td>3</td><td class="num">20.001 – 46.000 €</td><td class="num">0,15 %</td></tr>
+      <tr><td>4</td><td class="num">46.001 – 70.000 €</td><td class="num">0,25 %</td></tr>
+      <tr><td>5</td><td class="num">70.001 € o más</td><td class="num">0,30 %</td></tr>
+    </table>
+
+    <h4>Parte 2 · Cualitativa (score)</h4>
+    <p>El resultado de la parte 1 se multiplica según tu score acumulado:</p>
+    <table>
+      <tr><th>Nivel</th><th>Score</th><th>Mult.</th></tr>
+      <tr><td>1</td><td class="num">0 – 100</td><td class="num">× 1,00</td></tr>
+      <tr><td>2</td><td class="num">101 – 250</td><td class="num">× 1,50</td></tr>
+      <tr><td>3</td><td class="num">251 – 375</td><td class="num">× 2,25</td></tr>
+      <tr><td>4</td><td class="num">376 – 500</td><td class="num">× 2,50</td></tr>
+      <tr><td>5</td><td class="num">501 o más</td><td class="num">× 3,00</td></tr>
+    </table>
+
+    <h4>Parte 3 · Attach CARE y SEGUROS</h4>
+    <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
+    <table>
+      <tr><th>Tramo</th><th>Attach</th><th>Mult.</th></tr>
+      <tr><td>1</td><td class="num">menos del 25 %</td><td class="num">× 0,25</td></tr>
+      <tr><td>2</td><td class="num">25 % – 45 %</td><td class="num">× 0,75</td></tr>
+      <tr><td>3</td><td class="num">45 % o más</td><td class="num">× 1,35</td></tr>
+    </table>
+    <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas totales del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
+
+    <h4>Ejemplo del email</h4>
+    <p class="num">55.000 € × 0,25 % = 137,50 € → × 2,25 (346 score) = 309,37 € → × 1,35 × 1,35 (48 % CARE, 45 % seguros) = <b>563,83 €</b></p>
+  </div>
+  <button class="mclose" onclick="dlgInfo.close()">Entendido</button>
+</dialog>
+
+<dialog id="dlgOverride">
+  <div class="mbody">
+    <h3 id="ovTitle">% Attach manual</h3>
+    <p class="sub">Deja el campo vacío para volver al cálculo automático.</p>
+    <div class="ov-field">
+      <label id="ovLabel" for="ovInput">% del mes</label>
+      <input id="ovInput" type="text" inputmode="decimal" placeholder="auto">
+    </div>
+    <p class="ov-note" id="ovAuto"></p>
+  </div>
+  <button class="mclose" id="ovSave">Guardar</button>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===== Fórmula (según email "Resumen nueva fórmula de incentivos") ===== */
+  const TRAMOS_FACT = [
+    {hasta:5000,  pct:0.0000, nivel:1},
+    {hasta:20000, pct:0.0010, nivel:2},
+    {hasta:46000, pct:0.0015, nivel:3},
+    {hasta:70000, pct:0.0025, nivel:4},
+    {hasta:Infinity, pct:0.0030, nivel:5},
+  ];
+  const TRAMOS_SCORE = [
+    {hasta:100, mult:1.00, nivel:1},
+    {hasta:250, mult:1.50, nivel:2},
+    {hasta:375, mult:2.25, nivel:3},
+    {hasta:500, mult:2.50, nivel:4},
+    {hasta:Infinity, mult:3.00, nivel:5},
+  ];
+  // El ejemplo del email (45% de seguros → ×1,35) sitúa el 45% exacto en el tramo alto.
+  function multAttach(p){ if(p==null||isNaN(p)) return 0.25; return p>=45?1.35 : p>=25?0.75 : 0.25; }
+  function tramoFact(f){ return TRAMOS_FACT.find(t=>f<=t.hasta); }
+  function tramoScore(s){ return TRAMOS_SCORE.find(t=>s<=t.hasta); }
+
+  /* ===== Estado ===== */
+  const KEY="incentivos:v1";
+  let state = load();
+  function load(){
+    try{ const d=JSON.parse(localStorage.getItem(KEY)); if(d&&Array.isArray(d.ventas)) return d; }catch(e){}
+    return {ventas:[], overrides:{}};
+  }
+  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function uid(){ return (crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2)); }
+
+  const now=new Date();
+  let view={y:now.getFullYear(), m:now.getMonth()}; // m: 0-11
+  let editingId=null;
+
+  /* ===== Utilidades ===== */
+  const fmtEUR=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
+  const fmtEUR0=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+  const fmtNum=new Intl.NumberFormat("es-ES");
+  const fmtPct=new Intl.NumberFormat("es-ES",{maximumFractionDigits:1});
+  const fmtMult=new Intl.NumberFormat("es-ES",{maximumFractionDigits:2});
+  // El email trunca cada parte a céntimos (309,375 -> 309,37), así que hacemos lo mismo
+  const floor2=x=>Math.floor((x+1e-9)*100)/100;
+  function monthKey(y,m){ return y+"-"+String(m+1).padStart(2,"0"); }
+  function monthName(y,m){ const s=new Date(y,m,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}); return s.charAt(0).toUpperCase()+s.slice(1); }
+  function parseDec(s){ if(typeof s!=="string") return NaN; s=s.trim().replace(/\./g,"").replace(",","."); return s===""?NaN:Number(s); }
+  function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  /* ===== Cálculo del mes ===== */
+  function computeMonth(y,m){
+    const mk=monthKey(y,m);
+    const ventas=state.ventas.filter(v=>v.date.startsWith(mk)).sort((a,b)=>b.date.localeCompare(a.date)||b.ts-a.ts);
+    const fact=ventas.reduce((a,v)=>a+v.amount,0);
+    const score=ventas.reduce((a,v)=>a+v.score,0);
+    const n=ventas.length;
+    const nCare=ventas.filter(v=>v.care).length;
+    const nSeg=ventas.filter(v=>v.seguro).length;
+    const ov=state.overrides[mk]||{};
+    const autoCare=n?nCare/n*100:null;
+    const autoSeg=n?nSeg/n*100:null;
+    const pctCare=(ov.care!=null)?ov.care:autoCare;
+    const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
+    const tF=tramoFact(fact), tS=tramoScore(score);
+    const parte1=floor2(fact*tF.pct);
+    const parte2=floor2(parte1*tS.mult);
+    const mCare=multAttach(pctCare), mSeg=multAttach(pctSeg);
+    const total=Math.round(parte2*mCare*mSeg*100)/100;
+    return {ventas,fact,score,n,nCare,nSeg,autoCare,autoSeg,pctCare,pctSeg,tF,tS,parte1,parte2,mCare,mSeg,total,ov,mk};
+  }
+
+  /* ===== Render ===== */
+  const $=id=>document.getElementById(id);
+
+  function render(){
+    const c=computeMonth(view.y,view.m);
+    $("monthTitle").textContent=monthName(view.y,view.m);
+    const isCurrent = view.y===now.getFullYear()&&view.m===now.getMonth();
+    $("nextM").disabled = view.y>now.getFullYear() || (view.y===now.getFullYear()&&view.m>=now.getMonth());
+
+    // Hero
+    $("totalIncentivo").textContent=fmtEUR.format(c.total);
+    $("totalIncentivo").classList.remove("pop"); void $("totalIncentivo").offsetWidth; $("totalIncentivo").classList.add("pop");
+    $("pipeline").innerHTML =
+      pipe("Ventas ×"+fmtMult.format(c.tF.pct*100)+"%", fmtEUR.format(c.parte1))
+      +'<span class="arrow">›</span>'
+      +pipe("Score", "× "+fmtMult.format(c.tS.mult))
+      +'<span class="arrow">›</span>'
+      +pipe("Care", "× "+fmtMult.format(c.mCare))
+      +'<span class="arrow">›</span>'
+      +pipe("Seguros", "× "+fmtMult.format(c.mSeg));
+
+    // Facturación
+    $("vFact").textContent=fmtEUR0.format(c.fact);
+    setLvl("lvlFact",c.tF.nivel,c.tF.pct>0);
+    const nextF=TRAMOS_FACT[TRAMOS_FACT.indexOf(c.tF)+1];
+    if(nextF){
+      $("barFact").style.width=Math.min(100,c.fact/c.tF.hasta*100)+"%";
+      $("barFact").className="";
+      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtMult.format(nextF.pct*100)+" %";
+    } else {
+      $("barFact").style.width="100%"; $("barFact").className="good";
+      $("hFact").textContent="Nivel máximo · 0,30 %";
+    }
+
+    // Score
+    $("vScore").textContent=fmtNum.format(c.score);
+    setLvl("lvlScore",c.tS.nivel,c.tS.mult>1);
+    const nextS=TRAMOS_SCORE[TRAMOS_SCORE.indexOf(c.tS)+1];
+    if(nextS){
+      $("barScore").style.width=Math.min(100,c.score/(c.tS.hasta+1)*100)+"%";
+      $("barScore").className="";
+      $("hScore").innerHTML="Te faltan <b>"+fmtNum.format(c.tS.hasta+1-c.score)+"</b> puntos para × "+fmtMult.format(nextS.mult);
+    } else {
+      $("barScore").style.width="100%"; $("barScore").className="good";
+      $("hScore").textContent="Nivel máximo · × 3,00";
+    }
+
+    // Attach
+    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.n,c.mCare);
+    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.n,c.mSeg);
+
+    // Lista
+    $("countSales").textContent=c.n?c.n+(c.n===1?" venta":" ventas"):"";
+    renderList(c);
+  }
+
+  function pipe(t,v){ return '<span class="pipe"><span class="t">'+t+'</span><b class="num">'+v+"</b></span>"; }
+
+  function setLvl(id,n,on){
+    const el=$(id); el.textContent="N"+n; el.className="lvl"+(on?" on":"");
+  }
+
+  function renderAttach(key,pct,auto,isManual,nOk,n,mult){
+    const v=$("v"+key), bar=$("bar"+key), hint=$("h"+key), cnt=$("c"+key);
+    if(pct==null){
+      v.firstChild.textContent="— ";
+      cnt.textContent="";
+      bar.style.width="0%";
+      hint.textContent="Sin ventas todavía";
+      return;
+    }
+    v.firstChild.textContent=fmtPct.format(pct)+" % ";
+    cnt.textContent=isManual?"(manual)":"("+nOk+"/"+n+")";
+    bar.style.width=Math.min(100,pct)+"%";
+    bar.className=pct>=45?"good":"";
+    if(pct>=45) hint.innerHTML="¡Tramo alto! Multiplicas <b>× 1,35</b>";
+    else if(pct>=25) hint.innerHTML="A <b>"+fmtPct.format(45-pct)+" pts</b> del × 1,35 (ahora × 0,75)";
+    else hint.innerHTML="A <b>"+fmtPct.format(25-pct)+" pts</b> del × 0,75 (ahora × 0,25)";
+  }
+
+  function renderList(c){
+    const box=$("salesList");
+    if(!c.n){
+      box.innerHTML='<div class="empty"><b>Sin ventas este mes</b>Añade tu primera venta con el formulario de arriba.</div>';
+      return;
+    }
+    const byDay={};
+    c.ventas.forEach(v=>{ (byDay[v.date]=byDay[v.date]||[]).push(v); });
+    let html="";
+    Object.keys(byDay).sort().reverse().forEach(d=>{
+      const list=byDay[d];
+      const daySum=list.reduce((a,v)=>a+v.amount,0);
+      const dt=new Date(d+"T12:00:00");
+      const label=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"});
+      html+='<div class="day"><div class="dh"><span style="text-transform:capitalize">'+label+'</span><span class="num">'+fmtEUR.format(daySum)+"</span></div>";
+      list.forEach(v=>{
+        html+='<div class="sale">'
+          +'<div class="amt num">'+fmtEUR.format(v.amount)+"</div>"
+          +'<div class="meta">'
+          +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
+          +(v.care?'<span class="chip care">CARE</span>':"")
+          +(v.seguro?'<span class="chip seg">SEGURO</span>':"")
+          +(v.note?'<span class="note">'+esc(v.note)+"</span>":"")
+          +"</div>"
+          +'<div class="act">'
+          +'<button data-edit="'+v.id+'" aria-label="Editar">✎</button>'
+          +'<button data-del="'+v.id+'" aria-label="Borrar">✕</button>'
+          +"</div></div>";
+      });
+      html+="</div>";
+    });
+    box.innerHTML=html;
+  }
+
+  /* ===== Formulario ===== */
+  let togCare=false, togSeg=false;
+  function refreshTogs(){
+    $("tCare").className="tog"+(togCare?" on":"");
+    $("tCare").textContent=(togCare?"✓ CARE":"+ CARE");
+    $("tSeg").className="tog"+(togSeg?" on":"");
+    $("tSeg").textContent=(togSeg?"✓ SEGURO":"+ SEGURO");
+  }
+  $("tCare").onclick=()=>{togCare=!togCare;refreshTogs();};
+  $("tSeg").onclick=()=>{togSeg=!togSeg;refreshTogs();};
+
+  function resetForm(){
+    editingId=null;
+    $("fAmount").value=""; $("fScore").value=""; $("fNote").value="";
+    $("fDate").value=todayISO();
+    togCare=false; togSeg=false; refreshTogs();
+    $("formTitle").textContent="Nueva venta";
+    $("btnSave").textContent="Añadir venta";
+    $("btnCancelEdit").hidden=true;
+  }
+
+  $("btnSave").onclick=()=>{
+    const amount=parseDec($("fAmount").value);
+    const score=parseDec($("fScore").value);
+    const date=$("fDate").value||todayISO();
+    const amt=isNaN(amount)?0:amount;
+    const sc=isNaN(score)?0:score;
+    if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
+    if(editingId){
+      const v=state.ventas.find(x=>x.id===editingId);
+      if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.date=date; v.note=$("fNote").value.trim(); }
+    } else {
+      state.ventas.push({id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,note:$("fNote").value.trim()});
+    }
+    save();
+    const d=new Date(date+"T12:00:00");
+    view={y:d.getFullYear(),m:d.getMonth()};
+    resetForm(); render();
+  };
+
+  $("btnCancelEdit").onclick=()=>{ resetForm(); };
+
+  $("salesList").addEventListener("click",e=>{
+    const del=e.target.closest("[data-del]"), ed=e.target.closest("[data-edit]");
+    if(del){
+      if(confirm("¿Borrar esta venta?")){
+        state.ventas=state.ventas.filter(v=>v.id!==del.dataset.del);
+        save(); if(editingId===del.dataset.del) resetForm(); render();
+      }
+    } else if(ed){
+      const v=state.ventas.find(x=>x.id===ed.dataset.edit);
+      if(!v) return;
+      editingId=v.id;
+      $("fAmount").value=v.amount?String(v.amount).replace(".",","):"";
+      $("fScore").value=v.score?String(v.score):"";
+      $("fNote").value=v.note||"";
+      $("fDate").value=v.date;
+      togCare=!!v.care; togSeg=!!v.seguro; refreshTogs();
+      $("formTitle").textContent="Editar venta";
+      $("btnSave").textContent="Guardar cambios";
+      $("btnCancelEdit").hidden=false;
+      $("formCard").scrollIntoView({behavior:"smooth",block:"center"});
+      $("fAmount").focus();
+    }
+  });
+
+  /* ===== Navegación de mes ===== */
+  $("prevM").onclick=()=>{ view.m--; if(view.m<0){view.m=11;view.y--;} resetForm(); render(); };
+  $("nextM").onclick=()=>{ view.m++; if(view.m>11){view.m=0;view.y++;} resetForm(); render(); };
+
+  /* ===== Override attach manual ===== */
+  let ovKey=null;
+  function openOverride(key){
+    ovKey=key;
+    const c=computeMonth(view.y,view.m);
+    const label=key==="care"?"CARE":"SEGUROS";
+    $("ovTitle").textContent="% Attach "+label+" · "+monthName(view.y,view.m);
+    $("ovLabel").textContent="% "+label+" del mes";
+    const cur=state.overrides[c.mk]&&state.overrides[c.mk][key];
+    $("ovInput").value=(cur!=null)?String(cur).replace(".",","):"";
+    const auto=key==="care"?c.autoCare:c.autoSeg;
+    $("ovAuto").textContent=auto!=null
+      ?("Cálculo automático actual: "+fmtPct.format(auto)+" % ("+(key==="care"?c.nCare:c.nSeg)+" de "+c.n+" ventas)")
+      :"Aún no hay ventas para el cálculo automático.";
+    document.getElementById("dlgOverride").showModal();
+  }
+  $("editCare").onclick=()=>openOverride("care");
+  $("editSeg").onclick=()=>openOverride("seg");
+  $("ovSave").onclick=()=>{
+    const mk=monthKey(view.y,view.m);
+    const val=parseDec($("ovInput").value);
+    state.overrides[mk]=state.overrides[mk]||{};
+    if(isNaN(val)) delete state.overrides[mk][ovKey];
+    else state.overrides[mk][ovKey]=Math.max(0,Math.min(100,val));
+    if(!Object.keys(state.overrides[mk]).length) delete state.overrides[mk];
+    save(); document.getElementById("dlgOverride").close(); render();
+  };
+
+  /* ===== Info / export / import / wipe ===== */
+  $("btnInfo").onclick=()=>document.getElementById("dlgInfo").showModal();
+
+  $("btnExport").onclick=()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="incentivos-"+todayISO()+".json";
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("btnImport").onclick=()=>$("fileImport").click();
+  $("fileImport").onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        if(!d||!Array.isArray(d.ventas)) throw 0;
+        if(confirm("Se importarán "+d.ventas.length+" ventas y reemplazarán los datos actuales. ¿Continuar?")){
+          state={ventas:d.ventas,overrides:d.overrides||{}}; save(); resetForm(); render();
+        }
+      }catch(_){ alert("El archivo no es una copia válida de la app."); }
+      e.target.value="";
+    };
+    r.readAsText(f);
+  };
+  $("btnWipe").onclick=()=>{
+    const mk=monthKey(view.y,view.m);
+    const n=state.ventas.filter(v=>v.date.startsWith(mk)).length;
+    if(!n){ alert("Este mes no tiene ventas."); return; }
+    if(confirm("¿Borrar las "+n+" ventas de "+monthName(view.y,view.m)+"? Esta acción no se puede deshacer.")){
+      state.ventas=state.ventas.filter(v=>!v.date.startsWith(mk));
+      delete state.overrides[mk];
+      save(); resetForm(); render();
+    }
+  };
+
+  /* ===== Init ===== */
+  resetForm();
+  render();
+})();
+</script>
+</body>
+</html>
