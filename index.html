@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EFF2F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E181E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Incentivos">
 <title>Mis Incentivos</title>
 <style>
   :root{
@@ -115,7 +120,8 @@
   }
   .tog.on{background:var(--good);border-color:var(--good);color:#fff}
   .row2{display:flex;gap:10px;margin-top:12px}
-  .row2 .field input{font-size:15px;font-weight:600}
+  .row2 .field input{font-size:16px;font-weight:600}
+  button{touch-action:manipulation}
   .submit{
     width:100%;margin-top:14px;border:none;border-radius:14px;padding:15px;
     background:var(--gold);color:#14222B;font-size:17px;font-weight:800;cursor:pointer;
@@ -181,6 +187,17 @@
   .ov-field input{width:90px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);font-size:16px;font-weight:700;padding:8px 10px;text-align:right;font-family:inherit}
   .ov-note{font-size:12.5px;color:var(--muted)}
   .danger{color:var(--bad) !important}
+  .askrow{display:flex;gap:8px;padding:0 20px 20px}
+  .askrow .mclose{width:auto;flex:1;margin:0}
+  .askrow .yes{background:var(--gold);border-color:var(--gold);color:#14222B}
+  .askrow .yes.danger-btn{background:var(--bad);border-color:var(--bad);color:#fff}
+  #toast{
+    position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);
+    padding:10px 18px;border-radius:99px;font-size:14px;font-weight:700;opacity:0;
+    pointer-events:none;transition:all .25s ease;z-index:99;white-space:nowrap;box-shadow:var(--shadow);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;animation:none !important}
@@ -342,6 +359,19 @@
   <button class="mclose" id="ovSave">Guardar</button>
 </dialog>
 
+<dialog id="dlgAsk">
+  <div class="mbody">
+    <h3 id="askTitle">¿Seguro?</h3>
+    <p class="sub" id="askMsg" style="margin-bottom:0"></p>
+  </div>
+  <div class="askrow">
+    <button class="mclose" id="askNo">Cancelar</button>
+    <button class="mclose yes" id="askYes">Confirmar</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
 <script>
 (function(){
   "use strict";
@@ -373,7 +403,10 @@
     try{ const d=JSON.parse(localStorage.getItem(KEY)); if(d&&Array.isArray(d.ventas)) return d; }catch(e){}
     return {ventas:[], overrides:{}};
   }
-  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ toast("⚠️ No se pudo guardar en el dispositivo"); }
+  }
   function uid(){ return (crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2)); }
 
   const now=new Date();
@@ -390,9 +423,43 @@
   const floor2=x=>Math.floor((x+1e-9)*100)/100;
   function monthKey(y,m){ return y+"-"+String(m+1).padStart(2,"0"); }
   function monthName(y,m){ const s=new Date(y,m,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}); return s.charAt(0).toUpperCase()+s.slice(1); }
-  function parseDec(s){ if(typeof s!=="string") return NaN; s=s.trim().replace(/\./g,"").replace(",","."); return s===""?NaN:Number(s); }
+  // Acepta "1499,99", "1499.99", "1.500" (miles) y "1.234.567"
+  function parseDec(raw){
+    if(typeof raw!=="string") return NaN;
+    let s=raw.trim().replace(/[€\s]/g,"");
+    if(s==="") return NaN;
+    if(s.includes(",")){ s=s.replace(/\./g,"").replace(",","."); }
+    else if(s.includes(".")){
+      const parts=s.split(".");
+      if(parts[0].length&&parts.slice(1).every(p=>p.length===3)) s=parts.join("");
+      else s=parts.slice(0,-1).join("")+"."+parts[parts.length-1];
+    }
+    return Number(s);
+  }
   function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  let toastT;
+  function toast(msg){
+    const t=document.getElementById("toast");
+    t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200);
+  }
+  // Confirmación propia: los confirm()/alert() nativos pueden estar bloqueados en páginas embebidas
+  function ask(title,msg,yesLabel,danger){
+    return new Promise(res=>{
+      const dlg=document.getElementById("dlgAsk"), yes=document.getElementById("askYes"), no=document.getElementById("askNo");
+      document.getElementById("askTitle").textContent=title;
+      document.getElementById("askMsg").textContent=msg;
+      yes.textContent=yesLabel||"Confirmar";
+      yes.classList.toggle("danger-btn",!!danger);
+      const done=v=>{ yes.onclick=no.onclick=dlg.oncancel=null; if(dlg.open) dlg.close(); res(v); };
+      yes.onclick=()=>done(true);
+      no.onclick=()=>done(false);
+      dlg.oncancel=e=>{ e.preventDefault(); done(false); };
+      dlg.showModal();
+    });
+  }
 
   /* ===== Cálculo del mes ===== */
   function computeMonth(y,m){
@@ -564,20 +631,27 @@
     } else {
       state.ventas.push({id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,note:$("fNote").value.trim()});
     }
+    const wasEditing=!!editingId;
     save();
     const d=new Date(date+"T12:00:00");
     view={y:d.getFullYear(),m:d.getMonth()};
     resetForm(); render();
+    toast(wasEditing?"Cambios guardados ✓":"Venta añadida ✓");
   };
+
+  ["fAmount","fScore","fNote"].forEach(id=>{
+    $(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("btnSave").click(); } });
+  });
 
   $("btnCancelEdit").onclick=()=>{ resetForm(); };
 
-  $("salesList").addEventListener("click",e=>{
+  $("salesList").addEventListener("click",async e=>{
     const del=e.target.closest("[data-del]"), ed=e.target.closest("[data-edit]");
     if(del){
-      if(confirm("¿Borrar esta venta?")){
+      if(await ask("¿Borrar esta venta?","Se eliminará del mes y del cálculo del incentivo.","Borrar",true)){
         state.ventas=state.ventas.filter(v=>v.id!==del.dataset.del);
         save(); if(editingId===del.dataset.del) resetForm(); render();
+        toast("Venta borrada");
       }
     } else if(ed){
       const v=state.ventas.find(x=>x.id===ed.dataset.edit);
@@ -639,29 +713,44 @@
     a.click(); URL.revokeObjectURL(a.href);
   };
   $("btnImport").onclick=()=>$("fileImport").click();
+  function sanitizeVentas(arr){
+    return arr.filter(v=>v&&typeof v==="object").map(v=>({
+      id:String(v.id||uid()),
+      date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:todayISO(),
+      ts:Number(v.ts)||0,
+      amount:Number(v.amount)||0,
+      score:Number(v.score)||0,
+      care:!!v.care, seguro:!!v.seguro,
+      note:typeof v.note==="string"?v.note:""
+    }));
+  }
   $("fileImport").onchange=e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
-    r.onload=()=>{
+    r.onload=async ()=>{
       try{
         const d=JSON.parse(r.result);
         if(!d||!Array.isArray(d.ventas)) throw 0;
-        if(confirm("Se importarán "+d.ventas.length+" ventas y reemplazarán los datos actuales. ¿Continuar?")){
-          state={ventas:d.ventas,overrides:d.overrides||{}}; save(); resetForm(); render();
+        const ventas=sanitizeVentas(d.ventas);
+        if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{}};
+          save(); resetForm(); render();
+          toast("Copia importada ✓");
         }
-      }catch(_){ alert("El archivo no es una copia válida de la app."); }
+      }catch(_){ toast("⚠️ El archivo no es una copia válida"); }
       e.target.value="";
     };
     r.readAsText(f);
   };
-  $("btnWipe").onclick=()=>{
+  $("btnWipe").onclick=async ()=>{
     const mk=monthKey(view.y,view.m);
     const n=state.ventas.filter(v=>v.date.startsWith(mk)).length;
-    if(!n){ alert("Este mes no tiene ventas."); return; }
-    if(confirm("¿Borrar las "+n+" ventas de "+monthName(view.y,view.m)+"? Esta acción no se puede deshacer.")){
+    if(!n){ toast("Este mes no tiene ventas"); return; }
+    if(await ask("Borrar "+monthName(view.y,view.m),"Se borrarán las "+n+" ventas del mes. Esta acción no se puede deshacer.","Borrar todo",true)){
       state.ventas=state.ventas.filter(v=>!v.date.startsWith(mk));
       delete state.overrides[mk];
       save(); resetForm(); render();
+      toast("Mes borrado");
     }
   };
 
