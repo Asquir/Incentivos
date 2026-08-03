@@ -69,7 +69,17 @@
     margin-top:12px;border-radius:20px;padding:20px 18px 16px;color:var(--hero-ink);
     background:linear-gradient(155deg,var(--hero-2) 0%,var(--hero) 55%);
     box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
   }
+  .hero::before{
+    content:"";position:absolute;top:-45%;right:-18%;width:75%;aspect-ratio:1;
+    background:radial-gradient(circle,rgba(232,163,61,.16),transparent 65%);pointer-events:none;
+  }
+  .hero::after{
+    content:"";position:absolute;bottom:-55%;left:-25%;width:70%;aspect-ratio:1;
+    background:radial-gradient(circle,rgba(61,190,143,.08),transparent 65%);pointer-events:none;
+  }
+  .hero>*{position:relative;z-index:1}
   .hero .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .hero .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--hero-muted);font-weight:700}
   .share{
@@ -79,7 +89,11 @@
   }
   .proj{margin-top:10px;font-size:12.5px;color:var(--hero-muted)}
   .proj b{color:var(--gold)}
-  .hero .total{font-size:52px;font-weight:800;color:var(--gold);line-height:1.1;margin:2px 0 4px;letter-spacing:-.01em}
+  .hero .total{
+    font-size:52px;font-weight:800;color:var(--gold);line-height:1.1;margin:2px 0 4px;letter-spacing:-.01em;
+    background:linear-gradient(180deg,#F4C066 0%,#E8A33D 75%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
   .hero .total small{font-size:26px;font-weight:700}
   .pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px}
   .pipe{
@@ -103,8 +117,11 @@
   .tile .hint{font-size:11.5px;color:var(--muted);margin-top:6px;min-height:16px}
   .tile .hint b{color:var(--gold-ink)}
   .bar{height:5px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);margin-top:8px;position:relative;overflow:hidden}
-  .bar i{position:absolute;inset:0;width:0%;background:var(--gold);border-radius:99px;transition:width .5s ease;z-index:1}
-  .bar i.good{background:var(--good)}
+  .bar i{
+    position:absolute;inset:0;width:0%;border-radius:99px;transition:width .5s ease;z-index:1;
+    background:linear-gradient(90deg,#D98F26,#F0B45C);box-shadow:0 0 10px rgba(232,163,61,.35);
+  }
+  .bar i.good{background:linear-gradient(90deg,#1F8A66,#3DBE8F);box-shadow:0 0 10px rgba(61,190,143,.35)}
   .bar .mark{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:var(--muted);opacity:.6;z-index:2}
   .lvl{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 6px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);letter-spacing:.04em}
   .lvl.on{background:var(--gold);border-color:var(--gold);color:#14222B}
@@ -163,8 +180,15 @@
   .sale .act button{background:none;border:none;font-size:15px;padding:6px;cursor:pointer;color:var(--muted);border-radius:8px}
   .sale .act button:hover{color:var(--ink)}
   .empty{
-    text-align:center;color:var(--muted);padding:34px 20px;border:1.5px dashed var(--line);
+    text-align:center;color:var(--muted);padding:30px 20px 34px;border:1.5px dashed var(--line);
     border-radius:16px;font-size:14.5px;
+  }
+  .empty .eicon{
+    width:52px;height:52px;border-radius:50%;margin:0 auto 10px;
+    display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--gold) 14%,transparent);
+    color:var(--gold-ink);font-size:24px;font-weight:800;
+    font-family:ui-rounded,-apple-system,system-ui,sans-serif;
   }
   .empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
 
@@ -214,11 +238,21 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   #toast button{background:none;border:none;color:var(--gold);font-weight:800;font-size:14px;cursor:pointer;padding:0;font-family:inherit}
 
+  /* ---------- Movimiento ---------- */
+  .monthbar button:active,.tog:active,.toolbar button:active,.share:active,.mclose:active,.brand button:active{transform:scale(.95)}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .hero{animation:rise .4s ease backwards}
+  .tiles{animation:rise .4s ease .06s backwards}
+  #formCard{animation:rise .4s ease .12s backwards}
+  .list{animation:rise .4s ease .18s backwards}
+  @keyframes flash{0%{background:color-mix(in srgb,var(--gold) 24%,var(--surface));border-color:var(--gold)}100%{background:var(--surface)}}
+  .sale.new{animation:flash 1.3s ease}
+  dialog[open]{animation:dlgIn .22s ease}
+  @keyframes dlgIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;animation:none !important}
   }
-  @keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
-  .pop{animation:pop .25s ease}
 </style>
 </head>
 <body>
@@ -433,6 +467,7 @@
   const now=new Date();
   let view={y:now.getFullYear(), m:now.getMonth()}; // m: 0-11
   let editingId=null;
+  let lastAddedId=null;
 
   /* ===== Utilidades ===== */
   const fmtEUR=new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
@@ -461,7 +496,7 @@
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
   let toastT;
-  function toast(msg,actionLabel,actionFn){
+  function toast(msg,actionLabel,actionFn,dur){
     const t=document.getElementById("toast"),m=document.getElementById("toastMsg"),b=document.getElementById("toastBtn");
     m.textContent=msg;
     if(actionLabel){
@@ -469,8 +504,56 @@
       b.onclick=()=>{ b.onclick=null; t.classList.remove("show"); clearTimeout(toastT); actionFn(); };
     } else { b.hidden=true; b.onclick=null; }
     t.classList.add("show");
-    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),actionLabel?5000:2200);
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),dur||(actionLabel?5000:2200));
   }
+  const reducedMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Confeti dorado al subir de nivel
+  function confetti(){
+    if(reducedMotion()) return;
+    const old=document.getElementById("confetti"); if(old) old.remove();
+    const cv=document.createElement("canvas"); cv.id="confetti";
+    document.body.appendChild(cv);
+    const dpr=Math.min(2,devicePixelRatio||1);
+    cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+    const ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
+    const colors=["#E8A33D","#F0B45C","#F4C066","#3DBE8F","#F2EFE7"];
+    const P=[];
+    for(let i=0;i<70;i++){
+      const a=(-90+(Math.random()*120-60))*Math.PI/180, sp=7+Math.random()*7;
+      P.push({x:innerWidth/2,y:innerHeight*.42,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+        w:5+Math.random()*5,h:3+Math.random()*4,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,
+        c:colors[i%colors.length],life:1});
+    }
+    const t0=performance.now();
+    (function step(t){
+      const sec=(t-t0)/1000;
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+      let alive=false;
+      P.forEach(p=>{
+        p.vy+=.28; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life=Math.max(0,1-sec/1.4);
+        if(p.life>0&&p.y<innerHeight+20) alive=true;
+        ctx.save(); ctx.globalAlpha=p.life; ctx.translate(p.x,p.y); ctx.rotate(p.r);
+        ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      });
+      if(alive&&sec<1.5) requestAnimationFrame(step); else cv.remove();
+    })(t0);
+  }
+
+  // Cuenta animada del total
+  let shownTotal=0;
+  function setTotal(v){
+    const el=document.getElementById("totalIncentivo");
+    if(reducedMotion()||Math.abs(v-shownTotal)<0.005){ el.textContent=fmtEUR.format(v); shownTotal=v; return; }
+    const from=shownTotal, t0=performance.now(), dur=550;
+    shownTotal=v;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
+      el.textContent=fmtEUR.format(from+(v-from)*e);
+      if(p<1) requestAnimationFrame(step); else el.textContent=fmtEUR.format(v);
+    })(t0);
+  }
+
   // Confirmación propia: los confirm()/alert() nativos pueden estar bloqueados en páginas embebidas
   function ask(title,msg,yesLabel,danger){
     return new Promise(res=>{
@@ -523,8 +606,7 @@
     $("nextM").disabled = view.y>now.getFullYear() || (view.y===now.getFullYear()&&view.m>=now.getMonth());
 
     // Hero
-    $("totalIncentivo").textContent=fmtEUR.format(c.total);
-    $("totalIncentivo").classList.remove("pop"); void $("totalIncentivo").offsetWidth; $("totalIncentivo").classList.add("pop");
+    setTotal(c.total);
     $("pipeline").innerHTML =
       pipe("Ventas ×"+fmtMult.format(c.tF.pct*100)+"%", fmtEUR.format(c.parte1))
       +'<span class="arrow">›</span>'
@@ -615,7 +697,7 @@
   function renderList(c){
     const box=$("salesList");
     if(!c.n){
-      box.innerHTML='<div class="empty"><b>Sin ventas este mes</b>Añade tu primera venta con el formulario de arriba.</div>';
+      box.innerHTML='<div class="empty"><div class="eicon">€</div><b>Sin ventas este mes</b>Añade tu primera venta con el formulario de arriba.</div>';
       return;
     }
     const byDay={};
@@ -628,7 +710,7 @@
       const label=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"});
       html+='<div class="day"><div class="dh"><span style="text-transform:capitalize">'+label+'</span><span class="num">'+fmtEUR.format(daySum)+"</span></div>";
       list.forEach(v=>{
-        html+='<div class="sale">'
+        html+='<div class="sale'+(v.id===lastAddedId?" new":"")+'">'
           +'<div class="amt num">'+fmtEUR.format(v.amount)+"</div>"
           +'<div class="meta">'
           +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
@@ -644,6 +726,7 @@
       html+="</div>";
     });
     box.innerHTML=html;
+    lastAddedId=null;
   }
 
   /* ===== Formulario ===== */
@@ -674,18 +757,29 @@
     const amt=isNaN(amount)?0:amount;
     const sc=isNaN(score)?0:score;
     if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
+    const d=new Date(date+"T12:00:00");
+    const pre=computeMonth(d.getFullYear(),d.getMonth());
     if(editingId){
       const v=state.ventas.find(x=>x.id===editingId);
       if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.date=date; v.note=$("fNote").value.trim(); }
+      lastAddedId=editingId;
     } else {
-      state.ventas.push({id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,note:$("fNote").value.trim()});
+      const nv={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,note:$("fNote").value.trim()};
+      state.ventas.push(nv);
+      lastAddedId=nv.id;
     }
     const wasEditing=!!editingId;
     save();
-    const d=new Date(date+"T12:00:00");
     view={y:d.getFullYear(),m:d.getMonth()};
     resetForm(); render();
-    toast(wasEditing?"Cambios guardados ✓":"Venta añadida ✓");
+    const post=computeMonth(view.y,view.m);
+    const up=
+      post.tF.nivel>pre.tF.nivel ? "🎉 ¡Nivel "+post.tF.nivel+" de facturación! Ahora al "+fmtMult.format(post.tF.pct*100)+" %" :
+      post.tS.nivel>pre.tS.nivel ? "🎉 ¡Nivel "+post.tS.nivel+" de score! Multiplicas × "+fmtMult.format(post.tS.mult) :
+      post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
+      post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
+    if(up){ confetti(); toast(up,null,null,4000); }
+    else toast(wasEditing?"Cambios guardados ✓":"Venta añadida ✓");
   };
 
   ["fAmount","fScore","fNote"].forEach(id=>{
@@ -745,12 +839,16 @@
   $("editSeg").onclick=()=>openOverride("seg");
   $("ovSave").onclick=()=>{
     const mk=monthKey(view.y,view.m);
+    const pre=computeMonth(view.y,view.m);
     const val=parseDec($("ovInput").value);
     state.overrides[mk]=state.overrides[mk]||{};
     if(isNaN(val)) delete state.overrides[mk][ovKey];
     else state.overrides[mk][ovKey]=Math.max(0,Math.min(100,val));
     if(!Object.keys(state.overrides[mk]).length) delete state.overrides[mk];
     save(); document.getElementById("dlgOverride").close(); render();
+    const post=computeMonth(view.y,view.m);
+    const preM=ovKey==="care"?pre.mCare:pre.mSeg, postM=ovKey==="care"?post.mCare:post.mSeg;
+    if(postM>preM){ confetti(); toast("🎉 ¡Attach "+(ovKey==="care"?"CARE":"SEGUROS")+" sube a × "+fmtMult.format(postM)+"!",null,null,4000); }
   };
 
   /* ===== Compartir resumen ===== */
