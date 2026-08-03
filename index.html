@@ -306,10 +306,13 @@
   #toast{
     position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
     transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);
-    padding:10px 18px;border-radius:99px;font-size:14px;font-weight:700;opacity:0;
-    pointer-events:none;transition:all .25s ease;z-index:99;white-space:nowrap;box-shadow:var(--shadow);
+    padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;opacity:0;
+    pointer-events:none;transition:all .25s ease;z-index:99;box-shadow:var(--shadow);
     display:flex;align-items:center;gap:14px;
+    /* Deja hueco al botón flotante y evita que un aviso largo se salga de la pantalla */
+    max-width:min(420px,calc(100vw - 92px));text-align:left;line-height:1.35;
   }
+  #toast button{flex-shrink:0}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   #toast button{background:none;border:none;color:var(--gold);font-weight:800;font-size:14px;cursor:pointer;padding:0;font-family:inherit}
 
@@ -487,6 +490,14 @@
 
     <h4>Accesorios</h4>
     <p>Los accesorios se apuntan con el botón <b>Accesorio</b> del formulario. Suman a tu facturación y a tu score igual que una venta, pero <b>no cuentan en el porcentaje de CARE ni de seguros</b>, así que no te bajan el attach.</p>
+
+    <h4>Varios productos a un mismo cliente</h4>
+    <p>Apunta <b>una línea por producto</b>, no una por ticket. Si vendes dos móviles con su CARE y su seguro, son dos ventas con CARE y seguro marcados en cada una: así el attach sale 2 de 2 (100 %) en vez de 1 de 1, y los tramos cuadran.</p>
+    <p>Para no repetir la misma entrada, al guardar aparece el botón <b>Duplicar</b> en el aviso de abajo: crea una copia idéntica de un toque.</p>
+
+    <h4>La proyección de fin de mes</h4>
+    <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
+    <p class="ov-note">Ejemplo: el día 10 llevas 20.000 € → 2.000 €/día → 62.000 € estimados a 31 días. Aparece a partir del séptimo día del mes, porque antes hay pocos datos y la cifra se dispara.</p>
 
     <h4>Ejemplo del email</h4>
     <p class="num">55.000 € × 0,25 % = 137,50 € → × 2,25 (346 score) = 309,37 € → × 1,35 × 1,35 (48 % CARE, 45 % seguros) = <b>563,83 €</b></p>
@@ -804,7 +815,9 @@
       // Con menos de una semana los datos dan proyecciones disparatadas
       if(day>=7&&day<dim){
         const pr=computeTotals(c.fact/day*dim, c.score/day*dim, c.pctCare, c.pctSeg);
-        projHtml="A este ritmo acabarás el mes con <b class=\"num\">~"+fmtEUR0.format(pr.total)+"</b>";
+        const quedan=dim-day;
+        projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · a este ritmo acabarás con <b class=\"num\">~"
+          +fmtEUR0.format(pr.total)+"</b>";
       }
     }
     $("proj").innerHTML=projHtml;
@@ -1079,20 +1092,35 @@
     if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
     const acc=esAcc;
     const d=new Date(date+"T12:00:00");
-    const pre=computeMonth(d.getFullYear(),d.getMonth());
+    const nueva={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim()};
     if(editingId){
+      const pre=computeMonth(d.getFullYear(),d.getMonth());
       const v=state.ventas.find(x=>x.id===editingId);
       if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc; v.date=date; v.note=$("fNote").value.trim(); }
       lastAddedId=editingId;
+      save();
+      view={y:d.getFullYear(),m:d.getMonth()};
+      resetForm(); render();
+      avisar(pre,null);
     } else {
-      const nv={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim()};
-      state.ventas.push(nv);
-      lastAddedId=nv.id;
+      guardarNueva(nueva);
     }
-    const wasEditing=!!editingId;
+  };
+
+  // Alta de una venta nueva. Separada para poder reutilizarla al duplicar.
+  function guardarNueva(nv){
+    const d=new Date(nv.date+"T12:00:00");
+    const pre=computeMonth(d.getFullYear(),d.getMonth());
+    state.ventas.push(nv);
+    lastAddedId=nv.id;
     save();
     view={y:d.getFullYear(),m:d.getMonth()};
     resetForm(); render();
+    avisar(pre,nv);
+  }
+
+  // Compara el mes antes y después para avisar de subidas y bajadas de tramo
+  function avisar(pre,nv){
     const post=computeMonth(view.y,view.m);
     // Una caída de tramo pesa más que una subida: se avisa aunque otra parte haya subido
     const dCare=post.mCare<pre.mCare, dSeg=post.mSeg<pre.mSeg;
@@ -1108,10 +1136,15 @@
       post.tS.nivel>pre.tS.nivel ? "🎉 ¡Nivel "+post.tS.nivel+" de score! Multiplicas × "+fmtMult.format(post.tS.mult) :
       post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
       post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
-    if(down) toast(down,null,null,5000);
-    else if(up){ confetti(); toast(up,null,null,4000); }
-    else toast(wasEditing?"Cambios guardados ✓":(acc?"Accesorio añadido ✓":"Venta añadida ✓"));
-  };
+    let msg;
+    if(down) msg=down;
+    else if(up){ confetti(); msg=up; }
+    else msg = nv ? (nv.acc?"Accesorio añadido ✓":"Venta añadida ✓") : "Cambios guardados ✓";
+    // Duplicar se ofrece siempre en un alta (varias unidades iguales al mismo cliente),
+    // también cuando el mensaje es de subida o bajada de tramo
+    if(nv) toast(msg,"Duplicar",()=>guardarNueva(Object.assign({},nv,{id:uid(),ts:Date.now()})),5000);
+    else toast(msg);
+  }
 
   ["fAmount","fScore","fNote"].forEach(id=>{
     $(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("btnSave").click(); } });
