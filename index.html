@@ -122,6 +122,8 @@
     background:rgba(232,163,61,.14);border:1px solid rgba(232,163,61,.3);color:var(--hero-ink);
   }
   .tip b{color:var(--gold);font-weight:800}
+  .tip.warn{background:rgba(224,106,87,.16);border-color:rgba(233,131,107,.4)}
+  .tip.warn b{color:#F09980}
 
   /* ---------- Stat tiles ---------- */
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -135,6 +137,8 @@
   .tile .v small{font-size:13px;font-weight:600;color:var(--muted)}
   .tile .hint{font-size:11.5px;color:var(--muted);margin-top:6px;min-height:16px}
   .tile .hint b{color:var(--gold-ink)}
+  .tile .hint.warn{color:var(--bad);font-weight:600}
+  .tile .hint.warn b{color:var(--bad)}
   /* Escalones: se ve de un vistazo por qué peldaño vas */
   .steps{display:flex;gap:3px;margin-top:9px}
   .steps i{flex:1;height:6px;border-radius:99px;background:var(--line);transition:background .35s ease}
@@ -749,10 +753,21 @@
     if(c.col!==1) chain+=cell("× "+fmtMult.format(c.col),"tienda","");
     $("chain").innerHTML=chain;
 
-    // El movimiento que más sube el incentivo ahora mismo
-    const lever=bestLever(c);
-    $("tip").innerHTML=lever?("💡 <b>"+lever.txt+"</b> y subirías a <b>"+fmtEUR.format(lever.total)+"</b>"):"";
-    $("tip").hidden=!lever;
+    // Primero el riesgo de caer de tramo; si no lo hay, el mejor movimiento
+    const risk=riesgo(c), lever=bestLever(c);
+    let tipHtml="", tipWarn=false;
+    if(risk){
+      tipWarn=true;
+      tipHtml = risk.m===0
+        ? "⚠️ <b>Cuidado:</b> la próxima venta sin "+risk.label+" te baja a <b>× "+fmtMult.format(risk.bajo)+"</b>"
+          +(risk.perdida>=0.01?" y pierdes <b>"+fmtEUR.format(risk.perdida)+"</b>":"")
+        : "⚠️ <b>Cuidado:</b> solo aguantas <b>1 venta más</b> sin "+risk.label+" antes de bajar a × "+fmtMult.format(risk.bajo);
+    } else if(lever){
+      tipHtml="💡 <b>"+lever.txt+"</b> y subirías a <b>"+fmtEUR.format(lever.total)+"</b>";
+    }
+    $("tip").innerHTML=tipHtml;
+    $("tip").className="tip"+(tipWarn?" warn":"");
+    $("tip").hidden=!tipHtml;
 
     // Proyección a fin de mes (solo mes en curso, a partir del día 3)
     const today=new Date();
@@ -853,6 +868,30 @@
     $(id).innerHTML=h;
   }
 
+  // Cuántas ventas más SIN el servicio aguantas sin caer de tramo
+  function margen(nOk,nAt,umbral){
+    if(!nOk||!umbral) return 0;
+    return Math.max(0,Math.floor(100*nOk/umbral-nAt));
+  }
+
+  // Riesgo de caer de tramo con las próximas ventas
+  function riesgo(c){
+    const a=cfg.at, out=[];
+    [["care",c.pctCare,c.nCare,c.ov.care!=null,"CARE"],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null,"seguro"]].forEach(([k,pct,nOk,manual,label])=>{
+      if(manual||pct==null||!c.nAt) return;
+      const umbral = pct>=a.t2?a.t2 : (pct>=a.t1?a.t1 : null);
+      if(umbral==null) return;
+      const bajo = pct>=a.t2?a.m2:a.m1;
+      const m=margen(nOk,c.nAt,umbral);
+      if(m>1) return;
+      const nuevoPct=nOk/(c.nAt+m+1)*100;
+      const t=k==="care"?computeTotals(c.fact,c.score,nuevoPct,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevoPct);
+      out.push({m,label,perdida:c.total-t.total,bajo});
+    });
+    out.sort((x,y)=>x.m-y.m||y.perdida-x.perdida);
+    return out[0]||null;
+  }
+
   // Calcula qué único movimiento sube más el incentivo (y cuánto)
   function bestLever(c){
     if(!c.n) return null;
@@ -897,9 +936,22 @@
     const paso=pct>=a.t2?3:(pct>=a.t1?2:1), top=paso===3;
     setLvl("lvl"+key,"× "+fmtMult.format(mult),top?"top":(paso===2?"":"low"));
     setSteps("st"+key,3,paso,top);
-    if(top) hint.innerHTML="¡Tramo alto! Multiplicas <b>× "+fmtMult.format(a.m3)+"</b>";
-    else if(paso===2) hint.innerHTML="A <b>"+fmtPct.format(a.t2-pct)+" pts</b> del × "+fmtMult.format(a.m3);
-    else hint.innerHTML="A <b>"+fmtPct.format(a.t1-pct)+" pts</b> del × "+fmtMult.format(a.m2);
+    hint.className="hint";
+    if(paso===1){
+      hint.innerHTML="A <b>"+fmtPct.format(a.t1-pct)+" pts</b> del × "+fmtMult.format(a.m2);
+      return;
+    }
+    if(isManual){
+      hint.innerHTML=top?"¡Tramo alto! Multiplicas <b>× "+fmtMult.format(a.m3)+"</b>"
+                        :"A <b>"+fmtPct.format(a.t2-pct)+" pts</b> del × "+fmtMult.format(a.m3);
+      return;
+    }
+    // El badge ya dice el multiplicador, así que aquí avisamos del margen que queda
+    const svc=key==="Care"?"CARE":"seguro";
+    const m=margen(nOk,n,top?a.t2:a.t1);
+    if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"; }
+    else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc; }
+    else hint.innerHTML="Aguantas <b>"+m+"</b> ventas sin "+svc;
   }
 
   function renderList(c){

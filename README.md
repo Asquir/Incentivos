@@ -60,6 +60,11 @@ escribir el % a mano con el botón ✎ de cada ficha.
   CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
 - Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €".
+- Consejo del mes: calcula qué único movimiento sube más el incentivo.
+- Aviso de riesgo: cuando quedan una o ninguna venta de margen antes de
+  caer de tramo de attach, avisa y cifra lo que se perdería. Las fichas
+  de CARE y seguros muestran siempre el margen disponible
+  ("aguantas 3 ventas sin CARE").
 - Progreso hacia el siguiente tramo de facturación, score y attach.
 - Historial por meses (navegación ‹ ›), lista de ventas por día y total
   estimado del año.
