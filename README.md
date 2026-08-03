@@ -65,6 +65,17 @@ escribir el % a mano con el botón ✎ de cada ficha.
 - Exportar / importar copia de seguridad en JSON.
 - Funciona sin conexión una vez instalada (service worker), con icono
   propio en la pantalla de inicio.
+- Gráfica de evolución de los últimos 6 meses (tocar una barra abre ese mes).
+- Ajustes con las tablas de la fórmula editables, por si la empresa las
+  cambia, más el multiplicador colectivo de la Parte 4 (pendiente de
+  aplicar por la empresa; se deja en 1 hasta que lo comuniquen).
+
+## Aviso importante sobre los datos
+
+Safari borra el almacenamiento de una web tras varios días sin visitarla.
+**Instalada en la pantalla de inicio esto no ocurre**, así que la app muestra
+un aviso recordándolo mientras no esté instalada, y recuerda hacer una copia
+si hace más de 30 días de la última.
 
 ## Publicar gratis para todo el equipo (GitHub Pages)
 

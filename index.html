@@ -54,7 +54,17 @@
   header{padding:18px 0 10px}
   .brand{display:flex;align-items:center;justify-content:space-between}
   .brand h1{font-size:15px;margin:0;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
-  .brand button{background:none;border:none;color:var(--muted);font-size:20px;padding:6px;cursor:pointer;border-radius:8px}
+  .hbtns{display:flex;gap:2px}
+  .brand button{background:none;border:none;color:var(--muted);font-size:20px;padding:6px 8px;cursor:pointer;border-radius:8px}
+  .install{
+    display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;
+    background:color-mix(in srgb,var(--gold) 12%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);
+    border-radius:14px;font-size:12.5px;color:var(--ink);line-height:1.4;
+  }
+  .install b{display:block;margin-bottom:2px;font-size:13.5px}
+  .install .ios{font-weight:700;color:var(--gold-ink);white-space:nowrap}
+  .install button{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0}
   .monthbar{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
   .monthbar h2{margin:0;font-size:26px;font-weight:800}
   .monthbar .nav{display:flex;gap:8px}
@@ -199,6 +209,22 @@
   }
   .empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
 
+  /* ---------- Evolución ---------- */
+  .trend{
+    display:flex;align-items:flex-end;gap:6px;height:112px;padding:12px 12px 0;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+  }
+  .tcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%;background:none;border:none;padding:0;cursor:pointer;font-family:inherit}
+  .tcol .tval{font-size:9.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tcol .tbar{
+    width:100%;border-radius:6px 6px 3px 3px;min-height:3px;
+    background:linear-gradient(180deg,#F0B45C,#D98F26);transition:height .45s ease;
+  }
+  .tcol.now .tbar{background:linear-gradient(180deg,#3DBE8F,#1F8A66)}
+  .tcol.empty .tbar{background:var(--line)}
+  .tcol .tlbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:capitalize;padding-bottom:8px}
+  .tcol.now .tlbl,.tcol.now .tval{color:var(--good)}
+
   /* ---------- Toolbar ---------- */
   .yeartotal{text-align:center;color:var(--muted);font-size:12.5px;margin:16px 0 0;font-weight:600;font-variant-numeric:tabular-nums}
   .toolbar{display:flex;gap:8px;margin-top:10px}
@@ -230,6 +256,16 @@
   .ov-field label{flex:1;font-size:14px;font-weight:600}
   .ov-field input{width:90px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);font-size:16px;font-weight:700;padding:8px 10px;text-align:right;font-family:inherit}
   .ov-note{font-size:12.5px;color:var(--muted)}
+  .cfgt td{padding:4px 6px}
+  .cfgt td:first-child{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .cfgt input{
+    width:100%;min-width:0;border:1.5px solid var(--line);border-radius:9px;background:var(--surface2);
+    color:var(--ink);font-size:15px;font-weight:700;padding:7px 9px;text-align:right;
+    font-family:inherit;font-variant-numeric:tabular-nums;
+  }
+  .cfgt input:focus{outline:none;border-color:var(--gold)}
+  .cfgt .fixed{text-align:right;color:var(--muted);font-weight:700;font-size:15px}
+  .cfgt .open{text-align:right;color:var(--muted);font-size:13px;font-style:italic}
   .danger{color:var(--bad) !important}
   .askrow{display:flex;gap:8px;padding:0 20px 20px}
   .askrow .mclose{width:auto;flex:1;margin:0}
@@ -280,10 +316,19 @@
 
 <div class="topsafe" aria-hidden="true"></div>
 <div class="wrap">
+  <div class="install" id="installTip" hidden>
+    <div><b>Guarda la app en tu pantalla de inicio</b>
+    Toca <span class="ios">Compartir</span> y luego <span class="ios">Añadir a pantalla de inicio</span>. Si no lo haces, el iPhone puede borrar tus ventas tras unos días sin abrirla.</div>
+    <button id="installClose" aria-label="Cerrar aviso">✕</button>
+  </div>
+
   <header>
     <div class="brand">
       <h1>Mis incentivos</h1>
-      <button id="btnInfo" title="Cómo se calcula" aria-label="Cómo se calcula">ⓘ</button>
+      <div class="hbtns">
+        <button id="btnInfo" title="Cómo se calcula" aria-label="Cómo se calcula">ⓘ</button>
+        <button id="btnCfg" title="Ajustes" aria-label="Ajustes">⚙</button>
+      </div>
     </div>
     <div class="monthbar">
       <h2 id="monthTitle" class="display">—</h2>
@@ -371,6 +416,11 @@
     <div id="salesList"></div>
   </section>
 
+  <section class="list" id="trendBox" hidden>
+    <h3>Evolución <span id="trendSub"></span></h3>
+    <div class="trend" id="trend"></div>
+  </section>
+
   <p class="yeartotal" id="yearTotal"></p>
 
   <div class="toolbar">
@@ -388,34 +438,15 @@
 
     <h4>Parte 1 · Cuantitativa (ventas)</h4>
     <p>Tu facturación del mes se multiplica por un porcentaje según el tramo alcanzado:</p>
-    <table>
-      <tr><th>Nivel</th><th>Facturación</th><th>%</th></tr>
-      <tr><td>1</td><td class="num">0 – 5.000 €</td><td class="num">0,00 %</td></tr>
-      <tr><td>2</td><td class="num">5.001 – 20.000 €</td><td class="num">0,10 %</td></tr>
-      <tr><td>3</td><td class="num">20.001 – 46.000 €</td><td class="num">0,15 %</td></tr>
-      <tr><td>4</td><td class="num">46.001 – 70.000 €</td><td class="num">0,25 %</td></tr>
-      <tr><td>5</td><td class="num">70.001 € o más</td><td class="num">0,30 %</td></tr>
-    </table>
+    <table id="infoFact"></table>
 
     <h4>Parte 2 · Cualitativa (score)</h4>
     <p>El resultado de la parte 1 se multiplica según tu score acumulado:</p>
-    <table>
-      <tr><th>Nivel</th><th>Score</th><th>Mult.</th></tr>
-      <tr><td>1</td><td class="num">0 – 100</td><td class="num">× 1,00</td></tr>
-      <tr><td>2</td><td class="num">101 – 250</td><td class="num">× 1,50</td></tr>
-      <tr><td>3</td><td class="num">251 – 375</td><td class="num">× 2,25</td></tr>
-      <tr><td>4</td><td class="num">376 – 500</td><td class="num">× 2,50</td></tr>
-      <tr><td>5</td><td class="num">501 o más</td><td class="num">× 3,00</td></tr>
-    </table>
+    <table id="infoScore"></table>
 
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
     <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
-    <table>
-      <tr><th>Tramo</th><th>Attach</th><th>Mult.</th></tr>
-      <tr><td>1</td><td class="num">menos del 25 %</td><td class="num">× 0,25</td></tr>
-      <tr><td>2</td><td class="num">25 % – 45 %</td><td class="num">× 0,75</td></tr>
-      <tr><td>3</td><td class="num">45 % o más</td><td class="num">× 1,35</td></tr>
-    </table>
+    <table id="infoAt"></table>
     <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas totales del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
 
     <h4>Ejemplo del email</h4>
@@ -437,6 +468,41 @@
   <button class="mclose" id="ovSave">Guardar</button>
 </dialog>
 
+<dialog id="dlgCfg">
+  <div class="mbody">
+    <h3>Ajustes de la fórmula</h3>
+    <p class="sub">Si la empresa cambia las tablas, actualízalas aquí y los cálculos se ajustan solos.</p>
+
+    <h4>Tramos de facturación</h4>
+    <table class="cfgt">
+      <tr><th>Nivel</th><th>Hasta (€)</th><th>%</th></tr>
+      <tbody id="cfgFact"></tbody>
+    </table>
+
+    <h4>Tramos de score</h4>
+    <table class="cfgt">
+      <tr><th>Nivel</th><th>Hasta</th><th>Multiplicador</th></tr>
+      <tbody id="cfgScore"></tbody>
+    </table>
+
+    <h4>Attach CARE y SEGUROS</h4>
+    <table class="cfgt">
+      <tr><th>Tramo</th><th>Desde %</th><th>Multiplicador</th></tr>
+      <tr><td>Bajo</td><td class="fixed">0</td><td><input id="cfgM1" inputmode="decimal"></td></tr>
+      <tr><td>Medio</td><td><input id="cfgT1" inputmode="decimal"></td><td><input id="cfgM2" inputmode="decimal"></td></tr>
+      <tr><td>Alto</td><td><input id="cfgT2" inputmode="decimal"></td><td><input id="cfgM3" inputmode="decimal"></td></tr>
+    </table>
+
+    <h4>Parte 4 · Multiplicador colectivo</h4>
+    <p class="ov-note">Pendiente de aplicar por la empresa (telefonía, reseñas y servicio técnico). Déjalo en 1 mientras no lo comuniquen.</p>
+    <div class="ov-field"><label for="cfgCol">Multiplicador de tienda</label><input id="cfgCol" inputmode="decimal"></div>
+  </div>
+  <div class="askrow">
+    <button class="mclose" id="cfgReset">Valores del email</button>
+    <button class="mclose yes" id="cfgSave">Guardar</button>
+  </div>
+</dialog>
+
 <dialog id="dlgAsk">
   <div class="mbody">
     <h3 id="askTitle">¿Seguro?</h3>
@@ -455,31 +521,40 @@
 (function(){
   "use strict";
 
-  /* ===== Fórmula (según email "Resumen nueva fórmula de incentivos") ===== */
-  const TRAMOS_FACT = [
-    {hasta:5000,  pct:0.0000, nivel:1},
-    {hasta:20000, pct:0.0010, nivel:2},
-    {hasta:46000, pct:0.0015, nivel:3},
-    {hasta:70000, pct:0.0025, nivel:4},
-    {hasta:Infinity, pct:0.0030, nivel:5},
-  ];
-  const TRAMOS_SCORE = [
-    {hasta:100, mult:1.00, nivel:1},
-    {hasta:250, mult:1.50, nivel:2},
-    {hasta:375, mult:2.25, nivel:3},
-    {hasta:500, mult:2.50, nivel:4},
-    {hasta:Infinity, mult:3.00, nivel:5},
-  ];
+  /* ===== Fórmula (según email "Resumen nueva fórmula de incentivos") =====
+     Los valores son editables desde Ajustes por si la empresa cambia las tablas.
+     pct se guarda en % tal cual aparece en el email (0,25 = 0,25 %). */
+  const DEF_CFG={
+    fact:[{hasta:5000,pct:0},{hasta:20000,pct:0.10},{hasta:46000,pct:0.15},{hasta:70000,pct:0.25},{hasta:null,pct:0.30}],
+    score:[{hasta:100,mult:1},{hasta:250,mult:1.5},{hasta:375,mult:2.25},{hasta:500,mult:2.5},{hasta:null,mult:3}],
+    at:{t1:25,t2:45,m1:0.25,m2:0.75,m3:1.35},
+    col:1
+  };
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  let cfg=clone(DEF_CFG);
+
+  const nivelesFact =()=>cfg.fact.map((t,i)=>Object.assign({nivel:i+1},t));
+  const nivelesScore=()=>cfg.score.map((t,i)=>Object.assign({nivel:i+1},t));
+  function tramoFact(f){ const L=nivelesFact(); return L.find(t=>t.hasta==null||f<=t.hasta)||L[L.length-1]; }
+  function tramoScore(s){ const L=nivelesScore(); return L.find(t=>t.hasta==null||s<=t.hasta)||L[L.length-1]; }
   // El ejemplo del email (45% de seguros → ×1,35) sitúa el 45% exacto en el tramo alto.
-  function multAttach(p){ if(p==null||isNaN(p)) return 0.25; return p>=45?1.35 : p>=25?0.75 : 0.25; }
-  function tramoFact(f){ return TRAMOS_FACT.find(t=>f<=t.hasta); }
-  function tramoScore(s){ return TRAMOS_SCORE.find(t=>s<=t.hasta); }
+  function multAttach(p){
+    const a=cfg.at;
+    if(p==null||isNaN(p)) return a.m1;
+    return p>=a.t2?a.m3 : p>=a.t1?a.m2 : a.m1;
+  }
 
   /* ===== Estado ===== */
   const KEY="incentivos:v1";
   let state = load();
   function load(){
-    try{ const d=JSON.parse(localStorage.getItem(KEY)); if(d&&Array.isArray(d.ventas)) return d; }catch(e){}
+    try{
+      const d=JSON.parse(localStorage.getItem(KEY));
+      if(d&&Array.isArray(d.ventas)){
+        if(d.cfg) cfg=Object.assign(clone(DEF_CFG),d.cfg);
+        return d;
+      }
+    }catch(e){}
     return {ventas:[], overrides:{}};
   }
   function save(){
@@ -597,11 +672,12 @@
   /* ===== Cálculo del mes ===== */
   function computeTotals(fact,score,pctCare,pctSeg){
     const tF=tramoFact(fact), tS=tramoScore(score);
-    const parte1=floor2(fact*tF.pct);
+    const parte1=floor2(fact*tF.pct/100);
     const parte2=floor2(parte1*tS.mult);
     const mCare=multAttach(pctCare), mSeg=multAttach(pctSeg);
-    const total=Math.round(parte2*mCare*mSeg*100)/100;
-    return {tF,tS,parte1,parte2,mCare,mSeg,total};
+    const col=Number(cfg.col)||1;
+    const total=Math.round(parte2*mCare*mSeg*col*100)/100;
+    return {tF,tS,parte1,parte2,mCare,mSeg,col,total};
   }
   function computeMonth(y,m){
     const mk=monthKey(y,m);
@@ -632,13 +708,14 @@
     // Hero
     setTotal(c.total);
     $("pipeline").innerHTML =
-      pipe("Ventas ×"+fmtMult.format(c.tF.pct*100)+"%", fmtEUR.format(c.parte1))
+      pipe("Ventas ×"+fmtMult.format(c.tF.pct)+"%", fmtEUR.format(c.parte1))
       +'<span class="arrow">›</span>'
       +pipe("Score", "× "+fmtMult.format(c.tS.mult))
       +'<span class="arrow">›</span>'
       +pipe("Care", "× "+fmtMult.format(c.mCare))
       +'<span class="arrow">›</span>'
-      +pipe("Seguros", "× "+fmtMult.format(c.mSeg));
+      +pipe("Seguros", "× "+fmtMult.format(c.mSeg))
+      +(c.col!==1?'<span class="arrow">›</span>'+pipe("Colectivo","× "+fmtMult.format(c.col)):"");
 
     // Proyección a fin de mes (solo mes en curso, a partir del día 3)
     const today=new Date();
@@ -657,27 +734,27 @@
     // Facturación
     $("vFact").textContent=fmtEUR0.format(c.fact);
     setLvl("lvlFact",c.tF.nivel,c.tF.pct>0);
-    const nextF=TRAMOS_FACT[TRAMOS_FACT.indexOf(c.tF)+1];
-    if(nextF){
+    const LF=nivelesFact(), nextF=LF[c.tF.nivel];
+    if(nextF&&c.tF.hasta!=null){
       $("barFact").style.width=Math.min(100,c.fact/c.tF.hasta*100)+"%";
       $("barFact").className="";
-      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtMult.format(nextF.pct*100)+" %";
+      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtMult.format(nextF.pct)+" %";
     } else {
       $("barFact").style.width="100%"; $("barFact").className="good";
-      $("hFact").textContent="Nivel máximo · 0,30 %";
+      $("hFact").textContent="Nivel máximo · "+fmtMult.format(c.tF.pct)+" %";
     }
 
     // Score
     $("vScore").textContent=fmtNum.format(c.score);
     setLvl("lvlScore",c.tS.nivel,c.tS.mult>1);
-    const nextS=TRAMOS_SCORE[TRAMOS_SCORE.indexOf(c.tS)+1];
-    if(nextS){
+    const LS=nivelesScore(), nextS=LS[c.tS.nivel];
+    if(nextS&&c.tS.hasta!=null){
       $("barScore").style.width=Math.min(100,c.score/(c.tS.hasta+1)*100)+"%";
       $("barScore").className="";
       $("hScore").innerHTML="Te faltan <b>"+fmtNum.format(c.tS.hasta+1-c.score)+"</b> puntos para × "+fmtMult.format(nextS.mult);
     } else {
       $("barScore").style.width="100%"; $("barScore").className="good";
-      $("hScore").textContent="Nivel máximo · × 3,00";
+      $("hScore").textContent="Nivel máximo · × "+fmtMult.format(c.tS.mult);
     }
 
     // Attach
@@ -692,7 +769,40 @@
     let ySum=0,yMonths=0;
     for(let m=0;m<12;m++){ const cm=computeMonth(view.y,m); if(cm.n){ ySum+=cm.total; yMonths++; } }
     $("yearTotal").textContent = yMonths>1 ? "Total estimado "+view.y+": "+fmtEUR.format(ySum) : "";
+
+    renderTrend();
   }
+
+  // Gráfica de los últimos 6 meses hasta el mes en vista
+  function renderTrend(){
+    const months=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(view.y,view.m-i,1);
+      months.push({y:d.getFullYear(),m:d.getMonth(),c:computeMonth(d.getFullYear(),d.getMonth())});
+    }
+    const withData=months.filter(x=>x.c.n).length;
+    $("trendBox").hidden=withData<2;
+    if(withData<2) return;
+    const max=Math.max(...months.map(x=>x.c.total),1);
+    $("trendSub").textContent="últimos 6 meses";
+    $("trend").innerHTML=months.map(x=>{
+      const h=x.c.total>0?Math.max(4,x.c.total/max*68):3;
+      const isNow=x.y===view.y&&x.m===view.m;
+      return '<button class="tcol'+(isNow?" now":"")+(x.c.n?"":" empty")+'" data-y="'+x.y+'" data-m="'+x.m+'"'
+        +' aria-label="'+monthName(x.y,x.m)+": "+fmtEUR.format(x.c.total)+'">'
+        +'<span class="tval">'+(x.c.total>0?fmtEUR0.format(x.c.total):"")+"</span>"
+        +'<span class="tbar" style="height:'+h+'px"></span>'
+        +'<span class="tlbl">'+new Date(x.y,x.m,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","")+"</span>"
+        +"</button>";
+    }).join("");
+  }
+
+  $("trend").addEventListener("click",e=>{
+    const b=e.target.closest(".tcol"); if(!b) return;
+    view={y:+b.dataset.y,m:+b.dataset.m};
+    resetForm(); render();
+    window.scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"});
+  });
 
   function pipe(t,v){ return '<span class="pipe"><span class="t">'+t+'</span><b class="num">'+v+"</b></span>"; }
 
@@ -712,10 +822,11 @@
     v.firstChild.textContent=fmtPct.format(pct)+" % ";
     cnt.textContent=isManual?"(manual)":"("+nOk+"/"+n+")";
     bar.style.width=Math.min(100,pct)+"%";
-    bar.className=pct>=45?"good":"";
-    if(pct>=45) hint.innerHTML="¡Tramo alto! Multiplicas <b>× 1,35</b>";
-    else if(pct>=25) hint.innerHTML="A <b>"+fmtPct.format(45-pct)+" pts</b> del × 1,35 (ahora × 0,75)";
-    else hint.innerHTML="A <b>"+fmtPct.format(25-pct)+" pts</b> del × 0,75 (ahora × 0,25)";
+    const a=cfg.at;
+    bar.className=pct>=a.t2?"good":"";
+    if(pct>=a.t2) hint.innerHTML="¡Tramo alto! Multiplicas <b>× "+fmtMult.format(a.m3)+"</b>";
+    else if(pct>=a.t1) hint.innerHTML="A <b>"+fmtPct.format(a.t2-pct)+" pts</b> del × "+fmtMult.format(a.m3)+" (ahora × "+fmtMult.format(a.m2)+")";
+    else hint.innerHTML="A <b>"+fmtPct.format(a.t1-pct)+" pts</b> del × "+fmtMult.format(a.m2)+" (ahora × "+fmtMult.format(a.m1)+")";
   }
 
   function renderList(c){
@@ -901,8 +1012,61 @@
     catch(e){ toast("No se pudo compartir"); }
   };
 
+  /* ===== Ajustes de la fórmula ===== */
+  const numIn=(id,val)=>'<input id="'+id+'" inputmode="decimal" value="'+String(val).replace(".",",")+'">';
+  function openCfg(){
+    $("cfgFact").innerHTML=cfg.fact.map((t,i)=>
+      "<tr><td>Nivel "+(i+1)+"</td><td>"
+      +(t.hasta==null?'<span class="open">abierto</span>':numIn("cfF"+i,t.hasta))
+      +"</td><td>"+numIn("cfP"+i,t.pct)+"</td></tr>").join("");
+    $("cfgScore").innerHTML=cfg.score.map((t,i)=>
+      "<tr><td>Nivel "+(i+1)+"</td><td>"
+      +(t.hasta==null?'<span class="open">abierto</span>':numIn("cfS"+i,t.hasta))
+      +"</td><td>"+numIn("cfM"+i,t.mult)+"</td></tr>").join("");
+    $("cfgT1").value=String(cfg.at.t1).replace(".",",");
+    $("cfgT2").value=String(cfg.at.t2).replace(".",",");
+    $("cfgM1").value=String(cfg.at.m1).replace(".",",");
+    $("cfgM2").value=String(cfg.at.m2).replace(".",",");
+    $("cfgM3").value=String(cfg.at.m3).replace(".",",");
+    $("cfgCol").value=String(cfg.col).replace(".",",");
+    document.getElementById("dlgCfg").showModal();
+  }
+  $("btnCfg").onclick=openCfg;
+  $("cfgReset").onclick=()=>{ cfg=clone(DEF_CFG); openCfg(); toast("Valores del email restaurados"); };
+  $("cfgSave").onclick=()=>{
+    const val=(id,fb)=>{ const el=$(id); if(!el) return fb; const v=parseDec(el.value); return isNaN(v)?fb:v; };
+    const nc=clone(cfg);
+    nc.fact=cfg.fact.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfF"+i,t.hasta)),pct:Math.max(0,val("cfP"+i,t.pct))}));
+    nc.score=cfg.score.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfS"+i,t.hasta)),mult:Math.max(0,val("cfM"+i,t.mult))}));
+    nc.at={t1:val("cfgT1",cfg.at.t1),t2:val("cfgT2",cfg.at.t2),m1:val("cfgM1",cfg.at.m1),m2:val("cfgM2",cfg.at.m2),m3:val("cfgM3",cfg.at.m3)};
+    nc.col=Math.max(0,val("cfgCol",cfg.col));
+    // Los topes deben ir de menor a mayor para que los tramos tengan sentido
+    const asc=a=>a.every((t,i)=>i===0||t.hasta==null||a[i-1].hasta==null||t.hasta>a[i-1].hasta);
+    if(!asc(nc.fact)||!asc(nc.score)){ toast("⚠️ Los topes deben ir de menor a mayor"); return; }
+    if(nc.at.t2<nc.at.t1){ toast("⚠️ El tramo alto debe ser mayor que el medio"); return; }
+    cfg=nc; state.cfg=cfg; save();
+    document.getElementById("dlgCfg").close();
+    render(); toast("Ajustes guardados ✓");
+  };
+
   /* ===== Info / export / import / wipe ===== */
-  $("btnInfo").onclick=()=>document.getElementById("dlgInfo").showModal();
+  function fillInfoTables(){
+    const rows=(arr,fmt)=>arr.map((t,i)=>{
+      const desde=i===0?0:(arr[i-1].hasta+1);
+      const rango=t.hasta==null?(fmtNum.format(desde)+" o más"):(fmtNum.format(desde)+" – "+fmtNum.format(t.hasta));
+      return "<tr><td>"+(i+1)+'</td><td class="num">'+rango+'</td><td class="num">'+fmt(t)+"</td></tr>";
+    }).join("");
+    $("infoFact").innerHTML='<tr><th>Nivel</th><th>Facturación (€)</th><th>%</th></tr>'
+      +rows(cfg.fact,t=>fmtMult.format(t.pct)+" %");
+    $("infoScore").innerHTML='<tr><th>Nivel</th><th>Score</th><th>Mult.</th></tr>'
+      +rows(cfg.score,t=>"× "+fmtMult.format(t.mult));
+    const a=cfg.at;
+    $("infoAt").innerHTML='<tr><th>Tramo</th><th>Attach</th><th>Mult.</th></tr>'
+      +'<tr><td>1</td><td class="num">menos del '+fmtPct.format(a.t1)+' %</td><td class="num">× '+fmtMult.format(a.m1)+"</td></tr>"
+      +'<tr><td>2</td><td class="num">'+fmtPct.format(a.t1)+" % – "+fmtPct.format(a.t2)+' %</td><td class="num">× '+fmtMult.format(a.m2)+"</td></tr>"
+      +'<tr><td>3</td><td class="num">'+fmtPct.format(a.t2)+' % o más</td><td class="num">× '+fmtMult.format(a.m3)+"</td></tr>";
+  }
+  $("btnInfo").onclick=()=>{ fillInfoTables(); document.getElementById("dlgInfo").showModal(); };
 
   $("btnExport").onclick=()=>{
     const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
@@ -910,6 +1074,8 @@
     a.href=URL.createObjectURL(blob);
     a.download="incentivos-"+todayISO()+".json";
     a.click(); URL.revokeObjectURL(a.href);
+    state.lastExport=todayISO(); save();
+    toast("Copia descargada ✓");
   };
   $("btnImport").onclick=()=>$("fileImport").click();
   function sanitizeVentas(arr){
@@ -932,7 +1098,8 @@
         if(!d||!Array.isArray(d.ventas)) throw 0;
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{}};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport};
+          if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
           save(); resetForm(); render();
           toast("Copia importada ✓");
         }
@@ -964,6 +1131,27 @@
     $("formCard").scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"center"});
     setTimeout(()=>$("fAmount").focus({preventScroll:true}),reducedMotion()?0:380);
   };
+
+  /* ===== Seguridad de los datos =====
+     Safari borra el almacenamiento de una web tras varios días sin visitarla.
+     Instalada en la pantalla de inicio eso no ocurre, así que lo recordamos. */
+  const standalone = window.navigator.standalone===true
+    || matchMedia("(display-mode: standalone)").matches;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(!standalone && isIOS && localStorage.getItem("incentivos:tip")!=="off"){
+    $("installTip").hidden=false;
+  }
+  $("installClose").onclick=()=>{
+    $("installTip").hidden=true;
+    try{ localStorage.setItem("incentivos:tip","off"); }catch(e){}
+  };
+  // Recordatorio de copia si hace más de 30 días (o nunca) y ya hay ventas apuntadas
+  setTimeout(()=>{
+    if(!state.ventas.length) return;
+    const last=state.lastExport;
+    const days=last?(Date.now()-new Date(last+"T12:00:00").getTime())/86400000:999;
+    if(days>30) toast("Haz una copia de tus ventas","Exportar",()=>$("btnExport").click(),8000);
+  },2500);
 
   /* ===== Init ===== */
   resetForm();
