@@ -555,6 +555,8 @@
     <p>Escribe el importe del aparato y luego ve <b>añadiendo servicios y accesorios con el buscador</b>: cada uno suma su precio y su score al total. Puedes buscar por nombre o por <b>SKU</b>.</p>
     <p>Si añades un phoneCare o un AppleCare, la app <b>marca sola</b> el CARE o el seguro de esa venta; puedes cambiarlo a mano si hace falta. Así el ticket entero queda como <b>una venta</b> y el attach cuenta 1 de 1, que es como se mide.</p>
     <p>Si vendes <b>dos aparatos</b> a la misma persona, sí son dos ventas: apunta la primera y usa <b>Duplicar</b> en el aviso de abajo.</p>
+    <p>El tipo <b>Venta</b> o <b>Accesorio</b> se pone solo: si solo añades accesorios y no escribes importe, se marca como accesorio. Puedes cambiarlo cuando quieras y se respeta tu elección.</p>
+    <p class="ov-note">Si te interrumpen y el móvil cierra la app, lo que estabas apuntando se recupera al volver a abrirla.</p>
 
     <h4>La proyección de fin de mes</h4>
     <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
@@ -1122,10 +1124,11 @@
     }
   }
   let careManual=false, segManual=false;
-  $("tCare").onclick=()=>{togCare=!togCare;careManual=true;refreshTogs();};
-  $("tSeg").onclick=()=>{togSeg=!togSeg;segManual=true;refreshTogs();};
-  $("segVenta").onclick=()=>{ esAcc=false; refreshTogs(); };
-  $("segAcc").onclick=()=>{ esAcc=true; togCare=false; togSeg=false; refreshTogs(); };
+  $("tCare").onclick=()=>{togCare=!togCare;careManual=true;refreshTogs();guardarBorrador();};
+  $("tSeg").onclick=()=>{togSeg=!togSeg;segManual=true;refreshTogs();guardarBorrador();};
+  let tipoManual=false;
+  $("segVenta").onclick=()=>{ esAcc=false; tipoManual=true; refreshTogs(); guardarBorrador(); };
+  $("segAcc").onclick=()=>{ esAcc=true; tipoManual=true; togCare=false; togSeg=false; refreshTogs(); guardarBorrador(); };
 
   function refreshDateChip(){
     const v=$("fDate").value||todayISO();
@@ -1140,8 +1143,9 @@
     $("fBuscar").value=""; $("fResults").hidden=true;
     lineas=[]; $("fAmount").dataset.base=0; $("fScore").dataset.base=0; pintarLineas();
     $("notaRow").hidden=true; $("btnNota").hidden=false;
+    try{ localStorage.removeItem(DRAFT); }catch(e){}
     $("fDate").value=todayISO();
-    togCare=false; togSeg=false; esAcc=false; careManual=false; segManual=false;
+    togCare=false; togSeg=false; esAcc=false; careManual=false; segManual=false; tipoManual=false;
     refreshTogs(); refreshDateChip();
     $("formTitle").textContent="Nueva venta";
     $("btnSave").textContent="Añadir venta";
@@ -1222,6 +1226,33 @@
   let lineas=[];
   const dec=n=>String(Math.round(n*100)/100).replace(".",",");
 
+  /* ===== Borrador: en tienda te interrumpen y el móvil recarga la página ===== */
+  const DRAFT="incentivos:draft";
+  let restaurando=false;
+  function guardarBorrador(){
+    if(editingId||restaurando) return;
+    const d={l:lineas,bp:$("fAmount").dataset.base||0,bs:$("fScore").dataset.base||0,
+      im:$("fAmount").value,sc:$("fScore").value,no:$("fNote").value,
+      c:togCare,g:togSeg,a:esAcc,f:$("fDate").value,cm:careManual,gm:segManual};
+    const vacio=!lineas.length&&!d.im&&!d.sc&&!d.no&&!d.c&&!d.g;
+    try{ vacio?localStorage.removeItem(DRAFT):localStorage.setItem(DRAFT,JSON.stringify(d)); }catch(e){}
+  }
+  function restaurarBorrador(raw){
+    let d; try{ d=JSON.parse(raw); }catch(e){}
+    if(!d||typeof d!=="object") return false;
+    restaurando=true;
+    lineas=Array.isArray(d.l)?d.l.filter(x=>x&&typeof x==="object"):[];
+    $("fAmount").dataset.base=Number(d.bp)||0;
+    $("fScore").dataset.base=Number(d.bs)||0;
+    $("fAmount").value=d.im||""; $("fScore").value=d.sc||"";
+    if(d.no){ $("fNote").value=d.no; $("notaRow").hidden=false; $("btnNota").hidden=true; }
+    togCare=!!d.c; togSeg=!!d.g; esAcc=!!d.a; careManual=!!d.cm; segManual=!!d.gm;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(d.f||"")) $("fDate").value=d.f;
+    refreshTogs(); refreshDateChip(); pintarLineas();
+    restaurando=false;
+    return !!(lineas.length||d.im||d.no);
+  }
+
   function recalcular(){
     // Importe y score = lo tecleado a mano (el aparato) + las líneas del catálogo
     const baseP=Number($("fAmount").dataset.base||0), baseS=Number($("fScore").dataset.base||0);
@@ -1232,8 +1263,13 @@
     // Si lo has puesto tú a mano, manda tu decisión.
     if(!careManual) togCare=lineas.some(l=>l.c==="c");
     if(!segManual) togSeg=lineas.some(l=>l.c==="g");
+    // Un ticket de solo accesorios (sin aparato ni servicio) se marca solo como accesorio
+    if(!tipoManual&&lineas.length){
+      esAcc = !baseP && !lineas.some(l=>l.c);
+    }
     refreshTogs();
     pintarLineas();
+    guardarBorrador();
   }
 
   function pintarLineas(){
@@ -1253,8 +1289,9 @@
     $("fAmount").dataset.base=Math.max(0,(isNaN(p)?0:p)-sumP);
     $("fScore").dataset.base=Math.max(0,(isNaN(s)?0:s)-sumS);
   }
-  $("fAmount").addEventListener("input",anotarBase);
-  $("fScore").addEventListener("input",anotarBase);
+  $("fAmount").addEventListener("input",()=>{anotarBase();guardarBorrador();});
+  $("fScore").addEventListener("input",()=>{anotarBase();guardarBorrador();});
+  $("fNote").addEventListener("input",guardarBorrador);
 
   function anadirLinea(it){
     lineas.push({n:it.n,p:it.p,s:it.s,c:it.c});
@@ -1387,7 +1424,7 @@
       $("fScore").dataset.base=Math.max(0,(v.score||0)-lineas.reduce((a,l)=>a+l.s,0));
       pintarLineas();
       togCare=!!v.care; togSeg=!!v.seguro; esAcc=!!v.acc;
-      careManual=true; segManual=true;   // se respeta lo que ya tenía guardado
+      careManual=true; segManual=true; tipoManual=true;   // se respeta lo que ya tenía guardado
       refreshTogs(); refreshDateChip();
       $("formTitle").textContent=v.acc?"Editar accesorio":"Editar venta";
       $("btnSave").textContent="Guardar cambios";
@@ -1599,8 +1636,12 @@
   },9000);
 
   /* ===== Init ===== */
+  // Se lee antes de resetForm, que es quien limpia el borrador
+  let borrador=null;
+  try{ borrador=localStorage.getItem(DRAFT); }catch(e){}
   resetForm();
   render();
+  if(borrador&&restaurarBorrador(borrador)) toast("Recuperado lo que estabas apuntando");
 
   // Modo sin conexión (solo cuando se sirve desde un servidor con sw.js, p.ej. GitHub Pages)
   if("serviceWorker" in navigator && location.protocol==="https:"){
