@@ -309,6 +309,23 @@
     font-family:ui-rounded,-apple-system,system-ui,sans-serif;
   }
   .empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
+  .verej{
+    display:block;margin:16px auto 0;border:1.5px solid var(--gold);background:none;
+    color:var(--gold-ink);border-radius:99px;padding:10px 18px;font-size:13.5px;
+    font-weight:800;cursor:pointer;font-family:inherit;
+  }
+  .verej:active{transform:scale(.97)}
+  .demobar{
+    display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 14px;
+    background:color-mix(in srgb,var(--gold) 14%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
+    border-radius:14px;font-size:13px;font-weight:700;color:var(--ink);
+  }
+  .demobar span{flex:1}
+  .demobar button{
+    background:var(--gold);border:none;color:#14222B;border-radius:99px;
+    padding:7px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;
+  }
 
   /* ---------- Evolución ---------- */
   .trend{
@@ -422,6 +439,11 @@
 
 <div class="topsafe" aria-hidden="true"></div>
 <div class="wrap">
+  <div class="demobar" id="demoBar" hidden>
+    <span>Estás viendo un mes de ejemplo</span>
+    <button type="button" id="btnQuitarEjemplo">Borrar ejemplo</button>
+  </div>
+
   <div class="install" id="installTip" hidden>
     <div><b>Guarda la app en tu pantalla de inicio</b>
     Toca <span class="ios">Compartir</span> y luego <span class="ios">Añadir a pantalla de inicio</span>. Si no lo haces, el iPhone puede borrar tus ventas tras unos días sin abrirla.</div>
@@ -941,8 +963,8 @@
     $("countSales").textContent=c.n
       ?(c.nAt+(c.nAt===1?" venta":" ventas")+(c.nAcc?" · "+c.nAcc+(c.nAcc===1?" accesorio":" accesorios"):""))
       :"ninguna todavía";
-    pintarPlegable();
-    if(listaAbierta) renderList(c);
+    if(pintarPlegable(!c.n)) renderList(c);
+    $("demoBar").hidden=!state.ventas.some(x=>x.demo);
 
     // Total estimado del año en vista
     let ySum=0,yMonths=0;
@@ -980,13 +1002,61 @@
     }).join("");
   }
 
+  /* ===== Mes de ejemplo, para ver la app funcionando sin apuntar nada ===== */
+  function cargarEjemplo(){
+    const hoy=new Date();
+    const dia=d=>{ const x=new Date(hoy.getFullYear(),hoy.getMonth(),d);
+      return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); };
+    const mesAtras=(m,d)=>{ const x=new Date(hoy.getFullYear(),hoy.getMonth()-m,d);
+      return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); };
+    const v=(date,amount,score,care,seguro,acc,items)=>
+      ({id:"demo-"+uid(),date,ts:Date.now()+Math.random(),amount,score,care,seguro,acc,note:"",items:items||[],demo:true});
+    // Un mes realista repartido por los días ya transcurridos
+    const tope=Math.max(1,Math.min(hoy.getDate(),28));
+    const CARE_PL={n:"phoneCare Plus",p:80.99,s:5,c:"c"};
+    const MACCARE={n:"macCare laptop u2000",p:249.99,s:16,c:"c"};
+    const IPADCARE={n:"iPadCare",p:49.99,s:3,c:"c"};
+    const APC={n:"Applecare + Iphone 16",p:169,s:6,c:"g"};
+    const FUNDA={n:"FUN IPH16 MG BLUE CARE",p:29.99,s:2,c:""};
+    const guion=[];
+    for(let i=0;i<9;i++)  guion.push({eq:1290, li:i<8?[CARE_PL,APC]:[CARE_PL]});
+    for(let i=0;i<9;i++)  guion.push({eq:3490, li:[MACCARE]});
+    for(let i=0;i<5;i++)  guion.push({eq:890,  li:i<3?[IPADCARE]:[]});
+    for(let i=0;i<6;i++)  guion.push({acc:true, li:[FUNDA]});
+    const nuevas=[];
+    guion.forEach((g,i)=>{
+      const d=1+Math.floor(i*tope/guion.length);
+      const imp=(g.eq||0)+g.li.reduce((a,l)=>a+l.p,0);
+      const sc=g.li.reduce((a,l)=>a+l.s,0);
+      nuevas.push(v(dia(d), Math.round(imp*100)/100, sc,
+        g.li.some(l=>l.c==="c"), g.li.some(l=>l.c==="g"), !!g.acc, g.li.map(l=>Object.assign({},l))));
+    });
+    // Dos meses anteriores para que se vea la gráfica de evolución
+    [[1,42000,330],[2,31000,240]].forEach(([m,imp,sc])=>{
+      for(let k=0;k<4;k++) nuevas.push(v(mesAtras(m,4+k*6), imp/4, sc/4, k<3, k<2, false, []));
+    });
+    state.ventas=state.ventas.concat(nuevas);
+    save(); render();
+    window.scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"});
+    toast("Ejemplo cargado · bórralo cuando quieras");
+  }
+  function quitarEjemplo(){
+    state.ventas=state.ventas.filter(x=>!x.demo);
+    save(); render();
+    toast("Ejemplo borrado ✓");
+  }
+  $("btnQuitarEjemplo").onclick=quitarEjemplo;
+
   /* ===== Lista plegable ===== */
   let listaAbierta=false;
   try{ listaAbierta=localStorage.getItem("incentivos:lista")==="1"; }catch(e){}
-  function pintarPlegable(){
-    $("salesList").hidden=!listaAbierta;
-    $("btnLista").classList.toggle("abierto",listaAbierta);
-    $("btnLista").setAttribute("aria-expanded",listaAbierta?"true":"false");
+  function pintarPlegable(vacio){
+    // Con el mes vacío se abre sola: no hay nada que estorbe y así se ve qué hacer
+    const abierta=listaAbierta||!!vacio;
+    $("salesList").hidden=!abierta;
+    $("btnLista").classList.toggle("abierto",abierta);
+    $("btnLista").setAttribute("aria-expanded",abierta?"true":"false");
+    return abierta;
   }
   $("btnLista").onclick=()=>{
     listaAbierta=!listaAbierta;
@@ -1105,7 +1175,10 @@
   function renderList(c){
     const box=$("salesList");
     if(!c.n){
-      box.innerHTML='<div class="empty"><div class="eicon">€</div><b>Sin ventas este mes</b>Añade tu primera venta con el formulario de arriba.</div>';
+      box.innerHTML='<div class="empty"><div class="eicon">€</div><b>Sin ventas este mes</b>'
+        +'Apunta tu primera venta con el formulario de arriba.'
+        +'<button type="button" class="verej" id="verEjemplo">Ver cómo funciona con un ejemplo</button></div>';
+      const ve=$("verEjemplo"); if(ve) ve.onclick=cargarEjemplo;
       return;
     }
     // Con muchas ventas la página se hace infinita: mostramos las últimas
