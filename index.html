@@ -478,35 +478,6 @@
     <div class="proj" id="proj" hidden></div>
   </section>
 
-  <section class="tiles">
-    <div class="tile">
-      <div class="t"><span class="tname">Facturación</span><span class="lvl" id="lvlFact"></span></div>
-      <div class="v num" id="vFact">0 €</div>
-      <div class="steps" id="stFact"></div>
-      <div class="hint" id="hFact"></div>
-    </div>
-    <div class="tile">
-      <div class="t"><span class="tname">Score</span><span class="lvl" id="lvlScore"></span></div>
-      <div class="v num" id="vScore">0</div>
-      <div class="steps" id="stScore"></div>
-      <div class="hint" id="hScore"></div>
-    </div>
-    <div class="tile att">
-      <div class="t"><span class="tname">CARE</span><span class="lvl" id="lvlCare"></span></div>
-      <div class="v num" id="vCare">— <small id="cCare"></small></div>
-      <div class="steps" id="stCare"></div>
-      <div class="hint" id="hCare"></div>
-      <button class="pencil" id="editCare" aria-label="Editar % CARE">✎</button>
-    </div>
-    <div class="tile att">
-      <div class="t"><span class="tname">Seguros</span><span class="lvl" id="lvlSeg"></span></div>
-      <div class="v num" id="vSeg">— <small id="cSeg"></small></div>
-      <div class="steps" id="stSeg"></div>
-      <div class="hint" id="hSeg"></div>
-      <button class="pencil" id="editSeg" aria-label="Editar % SEGUROS">✎</button>
-    </div>
-  </section>
-
   <section class="card" id="formCard">
     <div class="ftitle">
       <h3 id="formTitle">Nueva venta</h3>
@@ -552,6 +523,42 @@
     <button class="submit" id="btnSave">Añadir venta</button>
     <button class="cancel-edit" id="btnCancelEdit" hidden>Cancelar edición</button>
   </section>
+
+  <button class="plegable" id="btnDetalle" aria-expanded="true" aria-controls="detalle">
+    <span>Detalle del mes</span>
+    <span class="num" id="detalleResumen"></span>
+    <span class="chev">⌄</span>
+  </button>
+  <div id="detalle">
+    <section class="tiles">
+      <div class="tile">
+        <div class="t"><span class="tname">Facturación</span><span class="lvl" id="lvlFact"></span></div>
+        <div class="v num" id="vFact">0 €</div>
+        <div class="steps" id="stFact"></div>
+        <div class="hint" id="hFact"></div>
+      </div>
+      <div class="tile">
+        <div class="t"><span class="tname">Score</span><span class="lvl" id="lvlScore"></span></div>
+        <div class="v num" id="vScore">0</div>
+        <div class="steps" id="stScore"></div>
+        <div class="hint" id="hScore"></div>
+      </div>
+      <div class="tile att">
+        <div class="t"><span class="tname">CARE</span><span class="lvl" id="lvlCare"></span></div>
+        <div class="v num" id="vCare">— <small id="cCare"></small></div>
+        <div class="steps" id="stCare"></div>
+        <div class="hint" id="hCare"></div>
+        <button class="pencil" id="editCare" aria-label="Editar % CARE">✎</button>
+      </div>
+      <div class="tile att">
+        <div class="t"><span class="tname">Seguros</span><span class="lvl" id="lvlSeg"></span></div>
+        <div class="v num" id="vSeg">— <small id="cSeg"></small></div>
+        <div class="steps" id="stSeg"></div>
+        <div class="hint" id="hSeg"></div>
+        <button class="pencil" id="editSeg" aria-label="Editar % SEGUROS">✎</button>
+      </div>
+    </section>
+  </div>
 
   <section class="list">
     <button class="plegable" id="btnLista" aria-expanded="false" aria-controls="salesList">
@@ -965,6 +972,8 @@
       :"ninguna todavía";
     if(pintarPlegable(!c.n)) renderList(c);
     $("demoBar").hidden=!state.ventas.some(x=>x.demo);
+    $("detalleResumen").textContent=fmtEUR0.format(c.fact)+" · "+fmtNum.format(c.score)+" pts";
+    pintarDetalle();
 
     // Total estimado del año en vista
     let ySum=0,yMonths=0;
@@ -1046,6 +1055,20 @@
     toast("Ejemplo borrado ✓");
   }
   $("btnQuitarEjemplo").onclick=quitarEjemplo;
+
+  /* ===== Detalle del mes, plegable ===== */
+  let detalleAbierto=true;
+  try{ detalleAbierto=localStorage.getItem("incentivos:detalle")!=="0"; }catch(e){}
+  function pintarDetalle(){
+    $("detalle").hidden=!detalleAbierto;
+    $("btnDetalle").classList.toggle("abierto",detalleAbierto);
+    $("btnDetalle").setAttribute("aria-expanded",detalleAbierto?"true":"false");
+  }
+  $("btnDetalle").onclick=()=>{
+    detalleAbierto=!detalleAbierto;
+    try{ localStorage.setItem("incentivos:detalle",detalleAbierto?"1":"0"); }catch(e){}
+    pintarDetalle();
+  };
 
   /* ===== Lista plegable ===== */
   let listaAbierta=false;
