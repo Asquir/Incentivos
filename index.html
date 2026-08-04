@@ -170,15 +170,20 @@
   }
   .field input:focus{outline:none;border-color:var(--gold)}
   .field input::placeholder{color:var(--muted);opacity:.55;font-weight:500}
-  /* Selector Venta / Accesorio (los accesorios no cuentan para el attach) */
-  .seg{display:flex;background:var(--surface2);border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px;margin-bottom:13px}
+  /* Selector Venta / Accesorio, compacto junto al título (se pone solo) */
+  .ftitle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+  .ftitle h3{margin:0}
+  .seg{display:flex;background:var(--surface2);border:1.5px solid var(--line);border-radius:10px;padding:2px;gap:2px;flex-shrink:0}
   .seg button{
-    flex:1;border:none;background:none;border-radius:9px;padding:9px 6px;font-size:14px;
+    border:none;background:none;border-radius:8px;padding:5px 10px;font-size:11.5px;
     font-weight:800;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .18s ease;
+    letter-spacing:.02em;
   }
   .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.13)}
+  /* Fecha y nota comparten fila */
+  .fmeta{display:flex;align-items:center;gap:10px;margin-top:12px}
   /* Buscador del catálogo */
-  .picker{position:relative;margin-bottom:13px}
+  .picker{margin-bottom:13px}
   .picker input{
     width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);
     color:var(--ink);font-size:16px;font-weight:600;padding:11px 13px;font-family:inherit;
@@ -186,10 +191,11 @@
   }
   .picker input:focus{outline:none;border-color:var(--gold)}
   .picker input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+  /* En su sitio, no flotando: si flota tapa el importe y se pulsa sin querer */
   .results{
-    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;
-    background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden;max-height:290px;overflow-y:auto;
+    margin-top:7px;
+    background:var(--surface2);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;max-height:270px;overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
   .results .rhead{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:9px 13px 5px}
   .results button{
@@ -198,7 +204,7 @@
     padding:10px 13px;cursor:pointer;font-family:inherit;color:var(--ink);
   }
   .results button:first-of-type{border-top:none}
-  .results button:hover,.results button:focus-visible,.results button:active{background:var(--surface2)}
+  .results button:hover,.results button:focus-visible,.results button:active{background:var(--surface)}
   .results .rn{flex:1;font-size:13px;font-weight:600;line-height:1.3;min-width:0}
   .results .rv{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0}
   .results .rp{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -226,7 +232,7 @@
   .linea button{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;flex-shrink:0}
   .addnote{
     background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;
-    cursor:pointer;font-family:inherit;padding:11px 0 2px;
+    cursor:pointer;font-family:inherit;padding:9px 4px;
   }
   .addnote:hover{color:var(--ink)}
   .accnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
@@ -240,7 +246,7 @@
   .row2{display:flex;gap:10px;margin-top:12px}
   .row2 .field input{font-size:16px;font-weight:600}
   .datechip{
-    position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:12px;
+    position:relative;display:inline-flex;align-items:center;gap:7px;
     padding:9px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface2);
     color:var(--muted);font-size:13.5px;font-weight:700;cursor:pointer;
   }
@@ -259,6 +265,17 @@
   .list{margin-top:16px}
   .list h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
   .list h3 span{font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+  /* Cabecera plegable, para que la lista no alargue la página */
+  .plegable{
+    width:100%;display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:11px 13px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);cursor:pointer;font-family:inherit;
+    font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;
+  }
+  .plegable .num{flex:1;text-align:right;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+  .plegable .chev{font-size:17px;line-height:1;transition:transform .25s ease;margin-top:-4px}
+  .plegable.abierto .chev{transform:rotate(180deg);margin-top:2px}
+  .plegable:active{transform:scale(.99)}
   .day{margin-bottom:14px}
   .day .dh{font-size:12.5px;font-weight:700;color:var(--muted);margin:0 2px 6px;display:flex;justify-content:space-between}
   .sale{
@@ -469,10 +486,12 @@
   </section>
 
   <section class="card" id="formCard">
-    <h3 id="formTitle">Nueva venta</h3>
-    <div class="seg" id="segTipo" role="group" aria-label="Tipo de apunte">
-      <button type="button" id="segVenta" class="on">Venta</button>
-      <button type="button" id="segAcc">Accesorio</button>
+    <div class="ftitle">
+      <h3 id="formTitle">Nueva venta</h3>
+      <div class="seg" id="segTipo" role="group" aria-label="Tipo de apunte">
+        <button type="button" id="segVenta" class="on">Venta</button>
+        <button type="button" id="segAcc">Accesorio</button>
+      </div>
     </div>
     <div class="picker">
       <input id="fBuscar" type="search" placeholder="🔍 Añadir producto, servicio o SKU" autocomplete="off" enterkeyhint="search">
@@ -494,25 +513,31 @@
       <button class="tog" id="tSeg" type="button">+ SEGURO</button>
     </div>
     <p class="accnote" id="accNote" hidden>Suma a tu facturación y a tu score, pero no cuenta para los porcentajes de CARE y seguros.</p>
-    <button type="button" class="addnote" id="btnNota">＋ Añadir nota</button>
+    <div class="fmeta">
+      <label class="datechip" id="dateChip">
+        <span aria-hidden="true">📅</span>
+        <span id="dateChipTxt">Hoy</span>
+        <input id="fDate" type="date" class="dateoverlay" aria-label="Fecha de la venta">
+      </label>
+      <button type="button" class="addnote" id="btnNota">＋ Nota</button>
+    </div>
     <div class="row2" id="notaRow" hidden>
       <div class="field">
         <label for="fNote">Nota (opcional)</label>
         <input id="fNote" type="text" placeholder="Cliente Marta, entrega el jueves…" autocomplete="off">
       </div>
     </div>
-    <label class="datechip" id="dateChip">
-      <span aria-hidden="true">📅</span>
-      <span id="dateChipTxt">Hoy</span>
-      <input id="fDate" type="date" class="dateoverlay" aria-label="Fecha de la venta">
-    </label>
     <button class="submit" id="btnSave">Añadir venta</button>
     <button class="cancel-edit" id="btnCancelEdit" hidden>Cancelar edición</button>
   </section>
 
   <section class="list">
-    <h3>Ventas del mes <span class="num" id="countSales"></span></h3>
-    <div id="salesList"></div>
+    <button class="plegable" id="btnLista" aria-expanded="false" aria-controls="salesList">
+      <span>Ventas del mes</span>
+      <span class="num" id="countSales"></span>
+      <span class="chev" id="chevLista">⌄</span>
+    </button>
+    <div id="salesList" hidden></div>
   </section>
 
   <section class="list" id="trendBox" hidden>
@@ -915,8 +940,9 @@
     // Lista
     $("countSales").textContent=c.n
       ?(c.nAt+(c.nAt===1?" venta":" ventas")+(c.nAcc?" · "+c.nAcc+(c.nAcc===1?" accesorio":" accesorios"):""))
-      :"";
-    renderList(c);
+      :"ninguna todavía";
+    pintarPlegable();
+    if(listaAbierta) renderList(c);
 
     // Total estimado del año en vista
     let ySum=0,yMonths=0;
@@ -953,6 +979,21 @@
         +"</button>";
     }).join("");
   }
+
+  /* ===== Lista plegable ===== */
+  let listaAbierta=false;
+  try{ listaAbierta=localStorage.getItem("incentivos:lista")==="1"; }catch(e){}
+  function pintarPlegable(){
+    $("salesList").hidden=!listaAbierta;
+    $("btnLista").classList.toggle("abierto",listaAbierta);
+    $("btnLista").setAttribute("aria-expanded",listaAbierta?"true":"false");
+  }
+  $("btnLista").onclick=()=>{
+    listaAbierta=!listaAbierta;
+    try{ localStorage.setItem("incentivos:lista",listaAbierta?"1":"0"); }catch(e){}
+    pintarPlegable();
+    if(listaAbierta) renderList(computeMonth(view.y,view.m));
+  };
 
   $("trend").addEventListener("click",e=>{
     const b=e.target.closest(".tcol"); if(!b) return;
@@ -1296,8 +1337,9 @@
   function anadirLinea(it){
     lineas.push({n:it.n,p:it.p,s:it.s,c:it.c});
     recalcular();
-    $("fBuscar").value=""; $("fResults").hidden=true;
-    $("fBuscar").focus();   // encadena varios productos del mismo ticket
+    $("fBuscar").value="";
+    $("fBuscar").focus();          // encadena varios productos del mismo ticket
+    $("fResults").hidden=true;     // después del foco, para que no se reabra la lista
   }
 
   $("fBuscar").addEventListener("input",pintarResultados);
@@ -1320,9 +1362,16 @@
     lineas.splice(+b.dataset.q,1);
     recalcular();
   });
-  document.addEventListener("click",e=>{
-    if(!e.target.closest(".picker")) $("fResults").hidden=true;
-  });
+  // En iOS un toque sobre algo que no es un botón no dispara "click", así que la
+  // lista se quedaba abierta. Se cierra al salir del campo y al tocar fuera.
+  $("fBuscar").addEventListener("blur",()=>{ setTimeout(()=>{ $("fResults").hidden=true; },120); });
+  const cerrarLista=e=>{ if(!e.target.closest(".picker")) $("fResults").hidden=true; };
+  document.addEventListener("click",cerrarLista);
+  document.addEventListener("touchstart",cerrarLista,{passive:true});
+  // Al desplazar la página también se entiende que ya no estás buscando
+  addEventListener("scroll",()=>{
+    if(!$("fResults").hidden&&document.activeElement!==$("fBuscar")) $("fResults").hidden=true;
+  },{passive:true});
 
   $("btnSave").onclick=()=>{
     const amount=parseDec($("fAmount").value);
