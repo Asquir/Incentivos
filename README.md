@@ -55,6 +55,11 @@ escribir el % a mano con el botón ✎ de cada ficha.
 ## Funciones
 
 - Alta de venta en segundos: importe, score y botones CARE / SEGURO.
+- Buscador con el catálogo de la empresa (2.073 servicios y accesorios con su
+  precio y su score): al elegir un producto rellena importe, score y nota.
+  Entiende las abreviaturas de tienda (buscar "funda" encuentra "FUN IPH16…")
+  y coloca arriba lo que más apuntas. La tarifa de servicios (Retail o
+  Retail POS) se elige en Ajustes.
 - Apunte de **accesorios**: suman a facturación y score, pero quedan fuera del
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
