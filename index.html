@@ -213,6 +213,7 @@
     margin-top:7px;
     background:var(--surface2);border:1px solid var(--line);border-radius:14px;
     overflow:hidden;max-height:270px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
   }
   .results .rhead{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:9px 13px 5px}
   .results button{
@@ -240,13 +241,14 @@
   .results .rt.mio{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--muted)}
   .results button.crear .rn b{color:var(--gold-ink)}
   .results button.crear .rp{font-size:11px}
-  /* Pie fijo: el fondo debe ser opaco o se transparenta el resultado de debajo */
+  /* Encabeza la lista y se queda fija al desplazarla, con fondo opaco */
   .results button.crear{
-    position:sticky;bottom:0;z-index:2;
+    position:sticky;top:0;z-index:2;padding:8px 13px;font-size:12.5px;
     background:color-mix(in srgb,var(--gold) 13%,var(--surface));
-    border-top:1px solid color-mix(in srgb,var(--gold) 35%,transparent);
-    box-shadow:0 -6px 12px -6px rgba(0,0,0,.28);
+    border-bottom:1px solid color-mix(in srgb,var(--gold) 35%,transparent);
+    box-shadow:0 6px 12px -6px rgba(0,0,0,.28);
   }
+  .results button.crear .rn{font-size:12.5px;font-weight:700}
   .results button.crear:hover,.results button.crear:active{
     background:color-mix(in srgb,var(--gold) 22%,var(--surface));
   }
@@ -1576,7 +1578,9 @@
       box.innerHTML=crear;
       box.hidden=false; return;
     }
-    box.innerHTML=(combo?filaCombo(combo):"")
+    // Crear va arriba: abajo lo tapa la barra del teclado de iOS y no se puede pulsar
+    box.innerHTML=crear
+      +(combo?filaCombo(combo):"")
       +(!q.trim()&&lista.length?'<div class="rhead">Tus más apuntados</div>':"")
       +lista.map((it,i)=>'<button type="button" data-i="'+i+(i===0?'" class="primero':"")+'">'
         +'<span class="rn">'
@@ -1585,11 +1589,28 @@
         +esc(it.n)
         +(it.g?'<span class="rg">'+esc(it.g)+"</span>":"")+"</span>"
         +'<span class="rv"><span class="rp">'+(it.p?fmtEUR.format(it.p):"—")+"</span>"
-        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("")
-      +crear;
+        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("");
     box.hidden=false;
     box._lista=lista;
     box._combo=combo;
+    ajustarAltoLista();
+  }
+
+  // Con el teclado abierto queda poco hueco: la lista se recorta para que no
+  // acabe debajo del teclado ni de su barra de botones
+  function ajustarAltoLista(){
+    const box=$("fResults");
+    if(box.hidden) return;
+    const vv=window.visualViewport;
+    const altoVis=vv?vv.height:innerHeight;
+    const desplaz=vv?vv.offsetTop:0;
+    const arriba=box.getBoundingClientRect().top-desplaz;
+    const hueco=altoVis-arriba-12;
+    box.style.maxHeight=Math.max(130,Math.min(300,hueco))+"px";
+  }
+  if(window.visualViewport){
+    visualViewport.addEventListener("resize",ajustarAltoLista);
+    visualViewport.addEventListener("scroll",ajustarAltoLista);
   }
 
   /* ===== Líneas del ticket en curso ===== */
