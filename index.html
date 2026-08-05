@@ -235,6 +235,10 @@
   }
   .results .rt.c{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
   .results .rt.g{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold-ink)}
+  /* Tu combinación más repetida, aprendida sola */
+  .results .rt.combo{background:var(--gold);color:#14222B}
+  .results button.combo{background:color-mix(in srgb,var(--gold) 11%,transparent);border-top:none}
+  .results button.combo+*{border-top:1px solid var(--line)}
   /* Líneas añadidas al ticket en curso */
   .lineas{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
   .linea{
@@ -628,6 +632,9 @@
 
     <h4>Tu objetivo del mes</h4>
     <p>Toca <b>Ponte un objetivo</b> bajo el incentivo y escribe la cifra a la que quieres llegar. Verás cuánto te falta y una barra de avance, y la app lo celebra en cuanto lo cruzas. Para quitarlo, deja el campo vacío.</p>
+
+    <h4>Lo de siempre</h4>
+    <p>Cuando repites dos veces la misma combinación de productos, la app la aprende sola y te la ofrece al abrir el buscador con la etiqueta <b>LO DE SIEMPRE</b>. Un toque y añade todos esos productos de golpe.</p>
 
     <h4>La proyección de fin de mes</h4>
     <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
@@ -1399,14 +1406,37 @@
     return res.slice(0,8);
   }
 
+  // La combinación de productos que más repites, aprendida de tus propias ventas
+  function comboHabitual(){
+    const cuenta={};
+    state.ventas.forEach(v=>{
+      if(v.demo||!v.items||v.items.length<2) return;
+      const k=v.items.map(i=>i.n).sort().join("|");
+      if(!cuenta[k]) cuenta[k]={n:0,items:v.items};
+      cuenta[k].n++;
+    });
+    let mejor=null;
+    Object.keys(cuenta).forEach(k=>{ const c=cuenta[k]; if(c.n>=2&&(!mejor||c.n>mejor.n)) mejor=c; });
+    return mejor;
+  }
+  function filaCombo(c){
+    const p=c.items.reduce((a,i)=>a+i.p,0), s=c.items.reduce((a,i)=>a+i.s,0);
+    return '<button type="button" class="combo" data-combo="1">'
+      +'<span class="rn"><span class="rt combo">LO DE SIEMPRE</span>'+esc(c.items.map(i=>i.n).join(" + "))+"</span>"
+      +'<span class="rv"><span class="rp">'+fmtEUR.format(p)+"</span>"
+      +'<span class="rs">'+fmtMult.format(s)+" pts</span></span></button>";
+  }
+
   function pintarResultados(){
     const q=$("fBuscar").value, lista=buscar(q), box=$("fResults");
-    if(!lista.length){
+    const combo=q.trim()?null:comboHabitual();
+    if(!lista.length&&!combo){
       if(!q.trim()){ box.hidden=true; return; }
       box.innerHTML='<div class="vacio">Sin resultados. Puedes escribir el importe y el score a mano.</div>';
       box.hidden=false; return;
     }
-    box.innerHTML=(!q.trim()?'<div class="rhead">Tus más apuntados</div>':"")
+    box.innerHTML=(combo?filaCombo(combo):"")
+      +(!q.trim()&&lista.length?'<div class="rhead">Tus más apuntados</div>':"")
       +lista.map((it,i)=>'<button type="button" data-i="'+i+(i===0?'" class="primero':"")+'">'
         +'<span class="rn">'
         +(it.c?'<span class="rt '+it.c+'">'+(it.c==="c"?"CARE":"SEGURO")+"</span>":"")
@@ -1416,6 +1446,7 @@
         +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("");
     box.hidden=false;
     box._lista=lista;
+    box._combo=combo;
   }
 
   /* ===== Líneas del ticket en curso ===== */
@@ -1507,9 +1538,20 @@
     if(l&&l.length&&!$("fResults").hidden) anadirLinea(l[0]);
   });
   $("fResults").addEventListener("mousedown",e=>{
+    const box=$("fResults");
+    const bc=e.target.closest("[data-combo]");
+    if(bc){
+      e.preventDefault();
+      const c=box._combo; if(!c) return;
+      c.items.forEach(i=>lineas.push({n:i.n,p:i.p,s:i.s,c:i.c}));
+      recalcular();
+      $("fBuscar").value=""; $("fBuscar").focus(); box.hidden=true;
+      toast("Añadido lo de siempre · "+c.items.length+" productos");
+      return;
+    }
     const b=e.target.closest("[data-i]"); if(!b) return;
     e.preventDefault();
-    const it=$("fResults")._lista[+b.dataset.i];
+    const it=box._lista[+b.dataset.i];
     if(it) anadirLinea(it);
   });
   $("fLineas").addEventListener("click",e=>{
