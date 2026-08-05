@@ -239,8 +239,17 @@
   .results .rt.combo{background:var(--gold);color:#14222B}
   .results .rt.mio{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--muted)}
   .results button.crear .rn b{color:var(--gold-ink)}
-  .results button.crear{background:color-mix(in srgb,var(--gold) 9%,transparent);position:sticky;bottom:0}
   .results button.crear .rp{font-size:11px}
+  /* Pie fijo: el fondo debe ser opaco o se transparenta el resultado de debajo */
+  .results button.crear{
+    position:sticky;bottom:0;z-index:2;
+    background:color-mix(in srgb,var(--gold) 13%,var(--surface));
+    border-top:1px solid color-mix(in srgb,var(--gold) 35%,transparent);
+    box-shadow:0 -6px 12px -6px rgba(0,0,0,.28);
+  }
+  .results button.crear:hover,.results button.crear:active{
+    background:color-mix(in srgb,var(--gold) 22%,var(--surface));
+  }
   .results button.combo{background:color-mix(in srgb,var(--gold) 11%,transparent);border-top:none}
   .results button.combo+*{border-top:1px solid var(--line)}
   /* Líneas añadidas al ticket en curso */
