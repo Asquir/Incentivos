@@ -237,6 +237,9 @@
   .results .rt.g{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold-ink)}
   /* Tu combinación más repetida, aprendida sola */
   .results .rt.combo{background:var(--gold);color:#14222B}
+  .results .rt.mio{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--muted)}
+  .results button.crear .rn b{color:var(--gold-ink)}
+  .results button.crear{background:color-mix(in srgb,var(--gold) 9%,transparent)}
   .results button.combo{background:color-mix(in srgb,var(--gold) 11%,transparent);border-top:none}
   .results button.combo+*{border-top:1px solid var(--line)}
   /* Líneas añadidas al ticket en curso */
@@ -405,6 +408,10 @@
   .cfgt input:focus{outline:none;border-color:var(--gold)}
   .cfgt .fixed{text-align:right;color:var(--muted);font-weight:700;font-size:15px}
   .cfgt .open{text-align:right;color:var(--muted);font-size:13px;font-style:italic}
+  .mio{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .mio .mn{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mio .mp{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mio button{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
   .danger{color:var(--bad) !important}
   .askrow{display:flex;gap:8px;padding:0 20px 20px}
   .askrow .mclose{width:auto;flex:1;margin:0}
@@ -633,6 +640,9 @@
     <h4>Tu objetivo del mes</h4>
     <p>Toca <b>Ponte un objetivo</b> bajo el incentivo y escribe la cifra a la que quieres llegar. Verás cuánto te falta y una barra de avance, y la app lo celebra en cuanto lo cruzas. Para quitarlo, deja el campo vacío.</p>
 
+    <h4>Tus propios productos</h4>
+    <p>Los móviles, Macs y iPads no vienen en el catálogo de la empresa. Búscalos por su nombre y, cuando no aparezcan, toca <b>Crear</b>: guardas el importe y el score una vez y ya salen siempre en el buscador con la etiqueta <b>TUYO</b>. Se borran desde Ajustes.</p>
+
     <h4>Lo de siempre</h4>
     <p>Cuando repites dos veces la misma combinación de productos, la app la aprende sola y te la ofrece al abrir el buscador con la etiqueta <b>LO DE SIEMPRE</b>. Un toque y añade todos esos productos de golpe.</p>
 
@@ -684,6 +694,12 @@
       <tr><td>Alto</td><td><input id="cfgT2" inputmode="decimal"></td><td><input id="cfgM3" inputmode="decimal"></td></tr>
     </table>
 
+    <div id="cfgMiosBloque" hidden>
+      <h4>Mis productos</h4>
+      <p class="ov-note">Los que has creado tú desde el buscador.</p>
+      <div id="cfgMios"></div>
+    </div>
+
     <h4>Parte 4 · Multiplicador colectivo</h4>
     <p class="ov-note">Pendiente de aplicar por la empresa (telefonía, reseñas y servicio técnico). Déjalo en 1 mientras no lo comuniquen.</p>
     <div class="ov-field"><label for="cfgCol">Multiplicador de tienda</label><input id="cfgCol" inputmode="decimal"></div>
@@ -691,6 +707,37 @@
   <div class="askrow">
     <button class="mclose" id="cfgReset">Valores del email</button>
     <button class="mclose yes" id="cfgSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgNuevo">
+  <div class="mbody">
+    <h3>Crear producto</h3>
+    <p class="sub">Se guarda en tu buscador para que no lo vuelvas a escribir. Los móviles y Macs no vienen en el catálogo de la empresa.</p>
+    <div class="field" style="margin-bottom:11px">
+      <label for="npNombre">Nombre</label>
+      <input id="npNombre" type="text" autocomplete="off" style="font-size:16px;font-weight:600">
+    </div>
+    <div class="frow">
+      <div class="field">
+        <label for="npPrecio">Importe (€)</label>
+        <input id="npPrecio" type="text" inputmode="decimal" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label for="npScore">Score</label>
+        <input id="npScore" type="text" inputmode="decimal" placeholder="0">
+      </div>
+    </div>
+    <p class="ov-note" style="margin-top:12px">¿Cuenta para el attach?</p>
+    <div class="seg" id="npTipo" style="margin-top:6px">
+      <button type="button" id="npNada" class="on">No</button>
+      <button type="button" id="npCare">Es CARE</button>
+      <button type="button" id="npSeg">Es seguro</button>
+    </div>
+  </div>
+  <div class="askrow">
+    <button class="mclose" id="npCancelar">Cancelar</button>
+    <button class="mclose yes" id="npGuardar">Crear y añadir</button>
   </div>
 </dialog>
 
@@ -1051,6 +1098,52 @@
     }).join("");
   }
 
+  /* ===== Productos propios (los aparatos no están en el catálogo) ===== */
+  let npClase="";
+  function pintarNpTipo(){
+    $("npNada").className=npClase===""?"on":"";
+    $("npCare").className=npClase==="c"?"on":"";
+    $("npSeg").className=npClase==="g"?"on":"";
+  }
+  $("npNada").onclick=()=>{npClase="";pintarNpTipo();};
+  $("npCare").onclick=()=>{npClase="c";pintarNpTipo();};
+  $("npSeg").onclick=()=>{npClase="g";pintarNpTipo();};
+  $("npCancelar").onclick=()=>document.getElementById("dlgNuevo").close();
+
+  function abrirCrear(nombre){
+    $("npNombre").value=nombre;
+    $("npPrecio").value=""; $("npScore").value="";
+    npClase=""; pintarNpTipo();
+    document.getElementById("dlgNuevo").showModal();
+    setTimeout(()=>$("npPrecio").focus(),120);
+  }
+  $("npGuardar").onclick=()=>{
+    const n=$("npNombre").value.trim();
+    if(!n){ $("npNombre").focus(); return; }
+    const pr=parseDec($("npPrecio").value), sc=parseDec($("npScore").value);
+    const nuevo={n:n,p:isNaN(pr)?0:Math.max(0,pr),s:isNaN(sc)?0:Math.max(0,sc),c:npClase};
+    state.propios=(state.propios||[]).filter(x=>x.n.toLowerCase()!==n.toLowerCase());
+    state.propios.push(nuevo);
+    save(); construirIndice();
+    document.getElementById("dlgNuevo").close();
+    anadirLinea(Object.assign({},nuevo,{mio:1}));
+    toast("Creado ✓ ya sale en el buscador");
+  };
+
+  function pintarMisProductos(){
+    const box=$("cfgMios"), l=state.propios||[];
+    $("cfgMiosBloque").hidden=!l.length;
+    box.innerHTML=l.map((p,i)=>'<div class="mio">'
+      +'<span class="mn">'+esc(p.n)+"</span>"
+      +'<span class="mp">'+fmtEUR.format(p.p)+" · "+fmtMult.format(p.s)+" pts</span>"
+      +'<button type="button" data-mio="'+i+'" aria-label="Borrar">✕</button></div>').join("");
+  }
+  $("cfgMios").addEventListener("click",e=>{
+    const b=e.target.closest("[data-mio]"); if(!b) return;
+    state.propios.splice(+b.dataset.mio,1);
+    save(); construirIndice(); pintarMisProductos();
+  });
+
   /* ===== Objetivo del mes ===== */
   function pintarMeta(c){
     const m=Number(state.objetivo)||0, t=$("metaTxt"), bar=$("metaBar"), fill=$("metaFill");
@@ -1366,14 +1459,20 @@
     "phoneCare Plus":80.99,
   };
   // [nombre, precio, score, skus, grupo, clase]  clase: c=CARE, g=seguro
-  const CATALOGO=[].concat(
-    CAT.s.map(p=>({n:p[0],p:p[1],s:p[2],sku:p[3]||"",g:p[4]||"",c:p[5]||"",srv:1})),
-    CAT.a.map(p=>({n:p[0],p:p[1],s:p[2],sku:p[3]||"",g:p[4]||"",c:"",srv:0}))
-  );
-  CATALOGO.forEach(it=>{
-    if(PRECIOS[it.n]!=null) it.p=PRECIOS[it.n];
-    it.k=norm(it.n+" "+it.sku+" "+it.g);
-  });
+  let CATALOGO=[];
+  function construirIndice(){
+    CATALOGO=[].concat(
+      // Los tuyos primero: los aparatos no vienen en el Excel y los añades tú
+      (state.propios||[]).map(p=>({n:p.n,p:p.p,s:p.s,sku:"",g:"",c:p.c||"",srv:2,mio:1})),
+      CAT.s.map(p=>({n:p[0],p:p[1],s:p[2],sku:p[3]||"",g:p[4]||"",c:p[5]||"",srv:1})),
+      CAT.a.map(p=>({n:p[0],p:p[1],s:p[2],sku:p[3]||"",g:p[4]||"",c:"",srv:0}))
+    );
+    CATALOGO.forEach(it=>{
+      if(!it.mio&&PRECIOS[it.n]!=null) it.p=PRECIOS[it.n];
+      it.k=norm(it.n+" "+it.sku+" "+it.g);
+    });
+  }
+  construirIndice();
 
   // El catálogo usa abreviaturas de tienda (FUN, PROTEC, COR., IPH...);
   // así se encuentran escribiendo la palabra de siempre.
@@ -1432,13 +1531,17 @@
     const combo=q.trim()?null:comboHabitual();
     if(!lista.length&&!combo){
       if(!q.trim()){ box.hidden=true; return; }
-      box.innerHTML='<div class="vacio">Sin resultados. Puedes escribir el importe y el score a mano.</div>';
+      // Lo que no está en el catálogo (móviles, Macs...) lo puedes crear tú
+      box.innerHTML='<button type="button" class="crear" data-crear="1">'
+        +'<span class="rn">＋ Crear <b>'+esc(q.trim())+'</b></span>'
+        +'<span class="rp">para que salga siempre</span></button>';
       box.hidden=false; return;
     }
     box.innerHTML=(combo?filaCombo(combo):"")
       +(!q.trim()&&lista.length?'<div class="rhead">Tus más apuntados</div>':"")
       +lista.map((it,i)=>'<button type="button" data-i="'+i+(i===0?'" class="primero':"")+'">'
         +'<span class="rn">'
+        +(it.mio?'<span class="rt mio">TUYO</span>':"")
         +(it.c?'<span class="rt '+it.c+'">'+(it.c==="c"?"CARE":"SEGURO")+"</span>":"")
         +esc(it.n)
         +(it.g?'<span class="rg">'+esc(it.g)+"</span>":"")+"</span>"
@@ -1547,6 +1650,13 @@
       recalcular();
       $("fBuscar").value=""; $("fBuscar").focus(); box.hidden=true;
       toast("Añadido lo de siempre · "+c.items.length+" productos");
+      return;
+    }
+    if(e.target.closest("[data-crear]")){
+      e.preventDefault();
+      const n=$("fBuscar").value.trim();
+      $("fBuscar").value=""; box.hidden=true; $("fBuscar").blur();
+      abrirCrear(n);
       return;
     }
     const b=e.target.closest("[data-i]"); if(!b) return;
@@ -1754,6 +1864,7 @@
     $("cfgM2").value=String(cfg.at.m2).replace(".",",");
     $("cfgM3").value=String(cfg.at.m3).replace(".",",");
     $("cfgCol").value=String(cfg.col).replace(".",",");
+    pintarMisProductos();
     document.getElementById("dlgCfg").showModal();
   }
   $("btnCfg").onclick=openCfg;
@@ -1828,7 +1939,8 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:""})):[]};
+          construirIndice();
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
           save(); resetForm(); render();
           toast("Copia importada ✓","Deshacer",()=>restore(snap),8000);
