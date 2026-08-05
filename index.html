@@ -239,7 +239,8 @@
   .results .rt.combo{background:var(--gold);color:#14222B}
   .results .rt.mio{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--muted)}
   .results button.crear .rn b{color:var(--gold-ink)}
-  .results button.crear{background:color-mix(in srgb,var(--gold) 9%,transparent)}
+  .results button.crear{background:color-mix(in srgb,var(--gold) 9%,transparent);position:sticky;bottom:0}
+  .results button.crear .rp{font-size:11px}
   .results button.combo{background:color-mix(in srgb,var(--gold) 11%,transparent);border-top:none}
   .results button.combo+*{border-top:1px solid var(--line)}
   /* Líneas añadidas al ticket en curso */
@@ -1554,12 +1555,16 @@
   function pintarResultados(){
     const q=$("fBuscar").value, lista=buscar(q), box=$("fResults");
     const combo=q.trim()?null:comboHabitual();
+    // Lo que no está en el catálogo (móviles, Macs...) se puede crear siempre,
+    // aunque la búsqueda haya encontrado otras cosas parecidas
+    const crear=q.trim()
+      ? '<button type="button" class="crear" data-crear="1">'
+        +'<span class="rn">＋ Crear <b>'+esc(q.trim())+'</b></span>'
+        +'<span class="rp">guardar como producto tuyo</span></button>'
+      : "";
     if(!lista.length&&!combo){
       if(!q.trim()){ box.hidden=true; return; }
-      // Lo que no está en el catálogo (móviles, Macs...) lo puedes crear tú
-      box.innerHTML='<button type="button" class="crear" data-crear="1">'
-        +'<span class="rn">＋ Crear <b>'+esc(q.trim())+'</b></span>'
-        +'<span class="rp">para que salga siempre</span></button>';
+      box.innerHTML=crear;
       box.hidden=false; return;
     }
     box.innerHTML=(combo?filaCombo(combo):"")
@@ -1571,7 +1576,8 @@
         +esc(it.n)
         +(it.g?'<span class="rg">'+esc(it.g)+"</span>":"")+"</span>"
         +'<span class="rv"><span class="rp">'+(it.p?fmtEUR.format(it.p):"—")+"</span>"
-        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("");
+        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("")
+      +crear;
     box.hidden=false;
     box._lista=lista;
     box._combo=combo;
@@ -1618,9 +1624,10 @@
     // Si lo has puesto tú a mano, manda tu decisión.
     if(!careManual) togCare=lineas.some(l=>l.c==="c");
     if(!segManual) togSeg=lineas.some(l=>l.c==="g");
-    // Un ticket de solo accesorios (sin aparato ni servicio) se marca solo como accesorio
+    // Solo se marca como accesorio si no hay aparato ni servicio: ni importe a mano,
+    // ni CARE o seguro, ni ningún producto tuyo (un iPhone que hayas creado no es accesorio)
     if(!tipoManual&&lineas.length){
-      esAcc = !baseP && !lineas.some(l=>l.c);
+      esAcc = !baseP && !lineas.some(l=>l.c) && lineas.every(l=>l.ac);
     }
     refreshTogs();
     pintarLineas();
@@ -1649,7 +1656,8 @@
   $("fNote").addEventListener("input",guardarBorrador);
 
   function anadirLinea(it){
-    lineas.push({n:it.n,p:it.p,s:it.s,c:it.c});
+    // ac=1 solo para los accesorios del catálogo; tus productos son aparatos
+    lineas.push({n:it.n,p:it.p,s:it.s,c:it.c,ac:(it.srv===0&&!it.mio)?1:0});
     recalcular();
     $("fBuscar").value="";
     $("fBuscar").focus();          // encadena varios productos del mismo ticket
@@ -1671,7 +1679,7 @@
     if(bc){
       e.preventDefault();
       const c=box._combo; if(!c) return;
-      c.items.forEach(i=>lineas.push({n:i.n,p:i.p,s:i.s,c:i.c}));
+      c.items.forEach(i=>lineas.push({n:i.n,p:i.p,s:i.s,c:i.c,ac:i.ac||0}));
       recalcular();
       $("fBuscar").value=""; $("fBuscar").focus(); box.hidden=true;
       toast("Añadido lo de siempre · "+c.items.length+" productos");
@@ -1714,7 +1722,7 @@
     if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
     const acc=esAcc;
     const d=new Date(date+"T12:00:00");
-    const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c}));
+    const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c,ac:l.ac||0}));
     const nueva={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim(),items:items};
     if(editingId){
       const pre=computeMonth(d.getFullYear(),d.getMonth());
@@ -1804,7 +1812,7 @@
       $("fNote").value=v.note||"";
       if(v.note){ $("notaRow").hidden=false; $("btnNota").hidden=true; }
       $("fDate").value=v.date;
-      lineas=Array.isArray(v.items)?v.items.map(x=>({n:x.n,p:x.p,s:x.s,c:x.c})):[];
+      lineas=Array.isArray(v.items)?v.items.map(x=>({n:x.n,p:x.p,s:x.s,c:x.c,ac:x.ac||0})):[];
       $("fAmount").dataset.base=Math.max(0,(v.amount||0)-lineas.reduce((a,l)=>a+l.p,0));
       $("fScore").dataset.base=Math.max(0,(v.score||0)-lineas.reduce((a,l)=>a+l.s,0));
       pintarLineas();
@@ -1951,7 +1959,7 @@
       demo:!!v.demo,
       items:Array.isArray(v.items)?v.items.filter(x=>x&&typeof x==="object").map(x=>({
         n:typeof x.n==="string"?x.n:"",p:Number(x.p)||0,s:Number(x.s)||0,
-        c:(x.c==="c"||x.c==="g")?x.c:""})):[]
+        c:(x.c==="c"||x.c==="g")?x.c:"",ac:x.ac?1:0})):[]
     }));
   }
   $("fileImport").onchange=e=>{
