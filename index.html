@@ -383,6 +383,8 @@
   .tcol.empty .tbar{background:var(--line)}
   .tcol .tlbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:capitalize;padding-bottom:8px}
   .tcol.now .tlbl,.tcol.now .tval{color:var(--good)}
+  #trendSub.mejor{color:var(--good);font-weight:800}
+  #trendSub.peor{color:var(--bad);font-weight:800}
 
   /* ---------- Toolbar ---------- */
   .yeartotal{text-align:center;color:var(--muted);font-size:12.5px;margin:16px 0 0;font-weight:600;font-variant-numeric:tabular-nums}
@@ -667,6 +669,9 @@
 
     <h4>Lo de siempre</h4>
     <p>Cuando repites dos veces la misma combinación de productos, la app la aprende sola y te la ofrece al abrir el buscador con la etiqueta <b>LO DE SIEMPRE</b>. Un toque y añade todos esos productos de golpe.</p>
+
+    <h4>Cómo vas respecto al mes pasado</h4>
+    <p>Sobre la gráfica de evolución aparece si vas mejor o peor que el mes anterior. La comparación es justa: coge el mes pasado <b>hasta el mismo día</b> en el que estás hoy, no el mes entero.</p>
 
     <h4>La proyección de fin de mes</h4>
     <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
@@ -1092,6 +1097,31 @@
     renderTrend();
   }
 
+  // Incentivo de un mes contando solo hasta cierto día, para comparar en igualdad
+  function totalHastaDia(y,m,dia){
+    const mk=monthKey(y,m);
+    const v=state.ventas.filter(x=>x.date.startsWith(mk)&&(+x.date.slice(8,10))<=dia);
+    if(!v.length) return null;
+    const fact=v.reduce((a,x)=>a+x.amount,0), score=v.reduce((a,x)=>a+x.score,0);
+    const nAcc=v.filter(x=>x.acc).length, nAt=v.length-nAcc;
+    const nCare=v.filter(x=>x.care&&!x.acc).length, nSeg=v.filter(x=>x.seguro&&!x.acc).length;
+    const ov=state.overrides[mk]||{};
+    const pc=(ov.care!=null)?ov.care:(nAt?nCare/nAt*100:null);
+    const ps=(ov.seg!=null)?ov.seg:(nAt?nSeg/nAt*100:null);
+    return computeTotals(fact,score,pc,ps).total;
+  }
+
+  // Comparación justa con el mes anterior: mismo día del mes
+  function compararMesAnterior(c){
+    if(!(view.y===now.getFullYear()&&view.m===now.getMonth())||!c.n) return null;
+    const dia=now.getDate();
+    const d=new Date(view.y,view.m-1,1);
+    const ant=totalHastaDia(d.getFullYear(),d.getMonth(),dia);
+    if(ant==null||ant<0.01) return null;
+    const pc=Math.round((c.total-ant)/ant*100);
+    return {pc:pc, mes:d.toLocaleDateString("es-ES",{month:"long"}), ant:ant};
+  }
+
   // Gráfica de los últimos 6 meses hasta el mes en vista
   function renderTrend(){
     const months=[];
@@ -1103,11 +1133,19 @@
     $("trendBox").hidden=withData<2;
     if(withData<2) return;
     const max=Math.max(...months.map(x=>x.c.total),1);
-    // "últimos 6 meses" solo es cierto en el mes actual; si se navega al pasado, se indica el rango
-    $("trendSub").textContent = (view.y===now.getFullYear()&&view.m===now.getMonth())
-      ? "últimos 6 meses"
-      : new Date(months[0].y,months[0].m,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","")
-        +" – "+new Date(view.y,view.m,1).toLocaleDateString("es-ES",{month:"short",year:"2-digit"}).replace(".","");
+    // En el mes actual se compara con el anterior a estas alturas; si no, el rango
+    const cmp=compararMesAnterior(computeMonth(view.y,view.m));
+    const sub=$("trendSub");
+    if(cmp){
+      sub.className=cmp.pc>=0?"mejor":"peor";
+      sub.textContent=(cmp.pc>=0?"▲ ":"▼ ")+Math.abs(cmp.pc)+" % que en "+cmp.mes;
+    } else {
+      sub.className="";
+      sub.textContent=(view.y===now.getFullYear()&&view.m===now.getMonth())
+        ? "últimos 6 meses"
+        : new Date(months[0].y,months[0].m,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","")
+          +" – "+new Date(view.y,view.m,1).toLocaleDateString("es-ES",{month:"short",year:"2-digit"}).replace(".","");
+    }
     $("trend").innerHTML=months.map(x=>{
       const h=x.c.total>0?Math.max(4,x.c.total/max*68):3;
       const isNow=x.y===view.y&&x.m===view.m;
