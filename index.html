@@ -118,6 +118,23 @@
   .chain .cv.lo{color:#E9836B}
   .chain .cl{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--hero-muted);font-weight:700}
   .chain .op{font-size:12px;color:var(--hero-muted);padding-bottom:15px}
+  /* Objetivo del mes: una línea, y solo si lo pones */
+  .meta{
+    display:block;width:100%;margin-top:12px;padding:0;background:none;border:none;
+    cursor:pointer;font-family:inherit;text-align:left;
+  }
+  .meta .mtxt{display:block;font-size:12.5px;font-weight:600;color:var(--hero-muted)}
+  .meta .mtxt b{color:var(--gold);font-weight:800}
+  .meta .mtxt.hecho b{color:#5FD3A6}
+  .meta .mbar{
+    display:block;height:6px;border-radius:99px;margin-top:7px;
+    background:rgba(255,255,255,.12);overflow:hidden;
+  }
+  .meta .mbar i{
+    display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#D98F26,#F4C066);transition:width .6s ease;
+  }
+  .meta .mbar i.hecho{background:linear-gradient(90deg,#1F8A66,#5FD3A6)}
   .tip{
     margin-top:13px;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.4;
     background:rgba(232,163,61,.14);border:1px solid rgba(232,163,61,.3);color:var(--hero-ink);
@@ -474,6 +491,10 @@
     </div>
     <div class="total display num" id="totalIncentivo">0,00 €</div>
     <div class="chain" id="chain"></div>
+    <button type="button" class="meta" id="btnMeta">
+      <span class="mtxt" id="metaTxt">＋ Ponte un objetivo</span>
+      <span class="mbar" id="metaBar" hidden><i id="metaFill"></i></span>
+    </button>
     <div class="tip" id="tip" hidden></div>
     <div class="proj" id="proj" hidden></div>
   </section>
@@ -605,6 +626,9 @@
     <p>El tipo <b>Venta</b> o <b>Accesorio</b> se pone solo: si solo añades accesorios y no escribes importe, se marca como accesorio. Puedes cambiarlo cuando quieras y se respeta tu elección.</p>
     <p class="ov-note">Si te interrumpen y el móvil cierra la app, lo que estabas apuntando se recupera al volver a abrirla.</p>
 
+    <h4>Tu objetivo del mes</h4>
+    <p>Toca <b>Ponte un objetivo</b> bajo el incentivo y escribe la cifra a la que quieres llegar. Verás cuánto te falta y una barra de avance, y la app lo celebra en cuanto lo cruzas. Para quitarlo, deja el campo vacío.</p>
+
     <h4>La proyección de fin de mes</h4>
     <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
     <p class="ov-note">Ejemplo: el día 10 llevas 20.000 € → 2.000 €/día → 62.000 € estimados a 31 días. Aparece a partir del séptimo día del mes, porque antes hay pocos datos y la cifra se dispara.</p>
@@ -660,6 +684,22 @@
   <div class="askrow">
     <button class="mclose" id="cfgReset">Valores del email</button>
     <button class="mclose yes" id="cfgSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgMeta">
+  <div class="mbody">
+    <h3>Tu objetivo del mes</h3>
+    <p class="sub">La app te irá enseñando cuánto te falta. Déjalo vacío para quitarlo.</p>
+    <div class="ov-field">
+      <label for="metaInput">Objetivo (€)</label>
+      <input id="metaInput" type="text" inputmode="decimal" placeholder="500">
+    </div>
+    <p class="ov-note" id="metaSugerencia"></p>
+  </div>
+  <div class="askrow">
+    <button class="mclose" id="metaCancelar">Cancelar</button>
+    <button class="mclose yes" id="metaGuardar">Guardar</button>
   </div>
 </dialog>
 
@@ -900,6 +940,8 @@
     if(c.col!==1) chain+=cell("× "+fmtMult.format(c.col),"tienda","");
     $("chain").innerHTML=chain;
 
+    pintarMeta(c);
+
     // Primero el riesgo de caer de tramo; si no lo hay, el mejor movimiento
     const risk=riesgo(c), lever=bestLever(c);
     let tipHtml="", tipWarn=false;
@@ -1001,6 +1043,38 @@
         +"</button>";
     }).join("");
   }
+
+  /* ===== Objetivo del mes ===== */
+  function pintarMeta(c){
+    const m=Number(state.objetivo)||0, t=$("metaTxt"), bar=$("metaBar"), fill=$("metaFill");
+    if(!m){
+      t.className="mtxt"; t.textContent="＋ Ponte un objetivo";
+      bar.hidden=true; return;
+    }
+    const pc=Math.min(100,c.total/m*100), hecho=c.total>=m;
+    t.className="mtxt"+(hecho?" hecho":"");
+    t.innerHTML=hecho
+      ? "🎯 <b>¡Objetivo conseguido!</b> "+fmtEUR0.format(m)+" · llevas "+fmtEUR.format(c.total)
+      : "Objetivo "+fmtEUR0.format(m)+" · te faltan <b>"+fmtEUR.format(m-c.total)+"</b>";
+    bar.hidden=false;
+    fill.className=hecho?"hecho":"";
+    fill.style.width=Math.max(2,pc)+"%";
+  }
+  $("btnMeta").onclick=()=>{
+    const c=computeMonth(view.y,view.m);
+    $("metaInput").value=state.objetivo?String(state.objetivo).replace(".",","):"";
+    // Se sugiere algo por encima de lo que va saliendo, para que motive
+    const sug=Math.max(100,Math.ceil((c.total||150)*1.2/50)*50);
+    $("metaSugerencia").textContent="Con este mes vas por "+fmtEUR.format(c.total)+". Una meta razonable serían "+fmtEUR0.format(sug)+".";
+    document.getElementById("dlgMeta").showModal();
+  };
+  $("metaCancelar").onclick=()=>document.getElementById("dlgMeta").close();
+  $("metaGuardar").onclick=()=>{
+    const v=parseDec($("metaInput").value);
+    if(isNaN(v)||v<=0) delete state.objetivo; else state.objetivo=Math.round(v*100)/100;
+    save(); document.getElementById("dlgMeta").close(); render();
+    toast(state.objetivo?"Objetivo guardado ✓":"Objetivo quitado");
+  };
 
   /* ===== Mes de ejemplo, para ver la app funcionando sin apuntar nada ===== */
   function cargarEjemplo(){
@@ -1514,8 +1588,12 @@
       post.tS.nivel>pre.tS.nivel ? "🎉 ¡Nivel "+post.tS.nivel+" de score! Multiplicas × "+fmtMult.format(post.tS.mult) :
       post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
       post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
+    // Cruzar el objetivo del mes manda sobre cualquier otro aviso
+    const meta=Number(state.objetivo)||0;
+    const metaHecha=meta&&pre.total<meta&&post.total>=meta;
     let msg;
-    if(down) msg=down;
+    if(metaHecha){ confetti(); msg="🎯 ¡Objetivo del mes conseguido! "+fmtEUR0.format(meta); }
+    else if(down) msg=down;
     else if(up){ confetti(); msg=up; }
     else msg = nv ? (nv.acc?"Accesorio añadido ✓":"Venta añadida ✓") : "Cambios guardados ✓";
     // Duplicar se ofrece siempre en un alta (varias unidades iguales al mismo cliente),
@@ -1692,6 +1770,7 @@
       score:Number(v.score)||0,
       care:!!v.care, seguro:!!v.seguro, acc:!!v.acc,
       note:typeof v.note==="string"?v.note:"",
+      demo:!!v.demo,
       items:Array.isArray(v.items)?v.items.filter(x=>x&&typeof x==="object").map(x=>({
         n:typeof x.n==="string"?x.n:"",p:Number(x.p)||0,s:Number(x.s)||0,
         c:(x.c==="c"||x.c==="g")?x.c:""})):[]
@@ -1707,7 +1786,7 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined};
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
           save(); resetForm(); render();
           toast("Copia importada ✓","Deshacer",()=>restore(snap),8000);
