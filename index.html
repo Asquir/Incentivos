@@ -309,6 +309,7 @@
     font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;
   }
   .plegable .num{flex:1;text-align:right;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+  .plegable .num.sinhoy{color:var(--gold-ink)}
   .plegable .chev{font-size:17px;line-height:1;transition:transform .25s ease;margin-top:-4px}
   .plegable.abierto .chev{transform:rotate(180deg);margin-top:2px}
   .plegable:active{transform:scale(.99)}
@@ -334,6 +335,15 @@
   .sale .act{display:flex;gap:2px}
   .sale .act button{background:none;border:none;font-size:15px;padding:6px;cursor:pointer;color:var(--muted);border-radius:8px}
   .sale .act button:hover{color:var(--ink)}
+  /* Filtro para ver dónde se te escapó el attach */
+  .filtros{display:flex;gap:7px;margin-bottom:9px}
+  .fch{
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+  }
+  .fch.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .fch.esc.on{background:var(--bad);border-color:var(--bad);color:#fff}
   .vermas{
     width:100%;border:1px solid var(--line);background:var(--surface);color:var(--muted);
     border-radius:12px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;
@@ -670,6 +680,12 @@
     <h4>Lo de siempre</h4>
     <p>Cuando repites dos veces la misma combinación de productos, la app la aprende sola y te la ofrece al abrir el buscador con la etiqueta <b>LO DE SIEMPRE</b>. Un toque y añade todos esos productos de golpe.</p>
 
+    <h4>El ritmo que necesitas</h4>
+    <p>Si te has puesto un objetivo, la línea de abajo del incentivo deja de estimar y te dice <b>cuánto tienes que facturar al día</b> con los días que quedan para llegar. Sin objetivo, sigue mostrando la proyección.</p>
+
+    <h4>Las ventas que se te escaparon</h4>
+    <p>Al desplegar las ventas del mes hay un filtro <b>Se escaparon</b>: las que salieron sin CARE y sin seguro. Son las que te están frenando el attach, y al verlas juntas se detecta el patrón.</p>
+
     <h4>Cómo vas respecto al mes pasado</h4>
     <p>Sobre la gráfica de evolución aparece si vas mejor o peor que el mes anterior. La comparación es justa: coge el mes pasado <b>hasta el mismo día</b> en el que estás hoy, no el mes entero.</p>
 
@@ -856,6 +872,7 @@
   let editingId=null;
   let lastAddedId=null;
   let verTodas=false;
+  let soloEscapadas=false;
 
   /* ===== Utilidades ===== */
   // useGrouping "always" para que 1.620 € y 16.001 € se escriban igual
@@ -1047,10 +1064,17 @@
       const dim=new Date(view.y,view.m+1,0).getDate();
       // Con menos de una semana los datos dan proyecciones disparatadas
       if(day>=7&&day<dim){
-        const pr=computeTotals(c.fact/day*dim, c.score/day*dim, c.pctCare, c.pctSeg);
         const quedan=dim-day;
-        projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · a este ritmo acabarás con <b class=\"num\">~"
-          +fmtEUR0.format(pr.total)+"</b>";
+        const falta=ritmoObjetivo(c);
+        if(falta!=null){
+          // Con objetivo puesto interesa más el ritmo que hace falta que la proyección
+          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · para tu objetivo, <b class=\"num\">~"
+            +fmtEUR0.format(falta/quedan)+"/día</b>";
+        } else {
+          const pr=computeTotals(c.fact/day*dim, c.score/day*dim, c.pctCare, c.pctSeg);
+          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · a este ritmo acabarás con <b class=\"num\">~"
+            +fmtEUR0.format(pr.total)+"</b>";
+        }
       }
     }
     $("proj").innerHTML=projHtml;
@@ -1083,9 +1107,13 @@
     renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc);
 
     // Lista
-    $("countSales").textContent=c.n
-      ?(c.nAt+(c.nAt===1?" venta":" ventas")+(c.nAcc?" · "+c.nAcc+(c.nAcc===1?" accesorio":" accesorios"):""))
-      :"ninguna todavía";
+    // En el mes en curso interesa saber qué llevas HOY sin tener que desplegar
+    const hoyISO=todayISO();
+    const nHoy=isCurrent?c.ventas.filter(v=>v.date===hoyISO).length:0;
+    $("countSales").textContent = !c.n ? "ninguna todavía"
+      : isCurrent ? ("hoy "+nHoy+" · "+c.n+" en el mes")
+      : (c.n+(c.n===1?" venta":" ventas"));
+    $("countSales").className="num"+(isCurrent&&!nHoy?" sinhoy":"");
     if(pintarPlegable(!c.n)) renderList(c);
     $("demoBar").hidden=!state.ventas.some(x=>x.demo);
 
@@ -1203,6 +1231,20 @@
     state.propios.splice(+b.dataset.mio,1);
     save(); construirIndice(); pintarMisProductos();
   });
+
+  /* ===== Ritmo necesario para el objetivo ===== */
+  // Cuánto habría que facturar (subiendo score en la misma proporción) para llegar
+  function ritmoObjetivo(c){
+    const meta=Number(state.objetivo)||0;
+    if(!meta||!c.fact||c.total>=meta) return null;
+    if(computeTotals(c.fact*10,c.score*10,c.pctCare,c.pctSeg).total<meta) return null;
+    let lo=1,hi=10;
+    for(let i=0;i<36;i++){
+      const k=(lo+hi)/2;
+      if(computeTotals(c.fact*k,c.score*k,c.pctCare,c.pctSeg).total>=meta) hi=k; else lo=k;
+    }
+    return Math.max(0,c.fact*hi-c.fact);
+  }
 
   /* ===== Objetivo del mes ===== */
   function pintarMeta(c){
@@ -1427,13 +1469,22 @@
       const ve=$("verEjemplo"); if(ve) ve.onclick=cargarEjemplo;
       return;
     }
+    // Las que salieron sin CARE ni seguro: donde se escapa el attach
+    const escapadas=c.ventas.filter(v=>!v.acc&&!v.care&&!v.seguro);
+    let base=soloEscapadas?escapadas:c.ventas;
+    let filtro="";
+    if(escapadas.length){
+      filtro='<div class="filtros">'
+        +'<button type="button" class="fch'+(soloEscapadas?"":" on")+'" data-f="0">Todas ('+c.n+")</button>"
+        +'<button type="button" class="fch esc'+(soloEscapadas?" on":"")+'" data-f="1">Se escaparon ('+escapadas.length+")</button></div>";
+    }
     // Con muchas ventas la página se hace infinita: mostramos las últimas
     const TOPE=25;
-    const visibles=verTodas?c.ventas:c.ventas.slice(0,TOPE);
-    const ocultas=c.n-visibles.length;
+    const visibles=verTodas?base:base.slice(0,TOPE);
+    const ocultas=base.length-visibles.length;
     const byDay={};
     visibles.forEach(v=>{ (byDay[v.date]=byDay[v.date]||[]).push(v); });
-    let html="";
+    let html=filtro;
     Object.keys(byDay).sort().reverse().forEach(d=>{
       const list=byDay[d];
       const daySum=list.reduce((a,v)=>a+v.amount,0);
@@ -1466,6 +1517,9 @@
     box.innerHTML=html;
     const vm=$("verMas")||$("verMenos");
     if(vm) vm.onclick=()=>{ verTodas=!verTodas; renderList(computeMonth(view.y,view.m)); };
+    box.querySelectorAll("[data-f]").forEach(btn=>{
+      btn.onclick=()=>{ soloEscapadas=btn.dataset.f==="1"; verTodas=false; renderList(computeMonth(view.y,view.m)); };
+    });
     lastAddedId=null;
   }
 
