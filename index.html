@@ -306,7 +306,12 @@
     display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
     border-radius:14px;padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow);
   }
-  .sale .amt{font-size:17px;font-weight:800;min-width:86px}
+  .sale .amt{font-size:17px;font-weight:800;min-width:96px}
+  /* Lo que esa venta aporta a tu incentivo */
+  .sale .apo{display:block;font-size:11.5px;font-weight:800;margin-top:2px;white-space:nowrap}
+  .sale .apo.pos{color:var(--good)}
+  .sale .apo.neg{color:var(--bad)}
+  .sale .apo.cero{color:var(--muted);font-weight:600}
   .sale .meta{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:0}
   .chip{font-size:10.5px;font-weight:800;border-radius:6px;padding:2.5px 7px;letter-spacing:.04em}
   .chip.score{background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
@@ -639,6 +644,11 @@
 
     <h4>Tu objetivo del mes</h4>
     <p>Toca <b>Ponte un objetivo</b> bajo el incentivo y escribe la cifra a la que quieres llegar. Verás cuánto te falta y una barra de avance, y la app lo celebra en cuanto lo cruzas. Para quitarlo, deja el campo vacío.</p>
+
+    <h4>Lo que aporta cada venta</h4>
+    <p>Debajo del importe de cada venta aparece <b>lo que suma a tu incentivo</b>: cuánto bajaría el total del mes si esa venta no existiera.</p>
+    <p>Sorprende, porque la fórmula multiplica. Dos ventas del mismo importe pueden valer <b>+27 €</b> y <b>+252 €</b> según lleven seguro o no. Y si estás justo por debajo de un tramo de attach, las ventas sin servicio salen <b>en rojo y en negativo</b>: te están diciendo cuánto te cuesta a ti cada una por mantenerte en el tramo de abajo.</p>
+    <p class="ov-note">Es lo que aporta cada una por separado, así que no se pueden sumar entre ellas: sirve para comparar unas con otras.</p>
 
     <h4>Tus propios productos</h4>
     <p>Los móviles, Macs y iPads no vienen en el catálogo de la empresa. Búscalos por su nombre y, cuando no aparezcan, toca <b>Crear</b>: guardas el importe y el score una vez y ya salen siempre en el buscador con la etiqueta <b>TUYO</b>. Se borran desde Ajustes.</p>
@@ -1346,6 +1356,18 @@
     else hint.innerHTML="Aguantas <b>"+m+"</b> ventas sin "+svc;
   }
 
+  // Lo que aporta una venta al incentivo: cuánto bajaría el total si no existiera.
+  // Al ser una fórmula de multiplicaciones, una venta sin servicios puede restar.
+  function aporta(c,v){
+    const nAt=c.nAt-(v.acc?0:1);
+    const nCare=c.nCare-((v.care&&!v.acc)?1:0);
+    const nSeg=c.nSeg-((v.seguro&&!v.acc)?1:0);
+    const pc=(c.ov.care!=null)?c.ov.care:(nAt?nCare/nAt*100:null);
+    const ps=(c.ov.seg!=null)?c.ov.seg:(nAt?nSeg/nAt*100:null);
+    const sin=computeTotals(c.fact-v.amount, c.score-v.score, pc, ps).total;
+    return Math.round((c.total-sin)*100)/100;
+  }
+
   function renderList(c){
     const box=$("salesList");
     if(!c.n){
@@ -1369,8 +1391,11 @@
       const label=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"});
       html+='<div class="day"><div class="dh"><span style="text-transform:capitalize">'+label+'</span><span class="num">'+fmtEUR.format(daySum)+"</span></div>";
       list.forEach(v=>{
+        const ap=aporta(c,v);
         html+='<div class="sale'+(v.id===lastAddedId?" new":"")+'">'
-          +'<div class="amt num">'+fmtEUR.format(v.amount)+"</div>"
+          +'<div class="amt num">'+fmtEUR.format(v.amount)
+          +'<span class="apo '+(ap<-0.005?"neg":(ap>0.005?"pos":"cero"))+'">'
+          +(ap>0.005?"+":"")+fmtEUR.format(ap)+" para ti</span></div>"
           +'<div class="meta">'
           +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
           +(v.acc?'<span class="chip acc">ACCESORIO</span>':"")
