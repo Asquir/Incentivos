@@ -540,11 +540,12 @@
   </section>
 
   <section class="tiles">
-    <div class="tile">
+    <div class="tile att">
       <div class="t"><span class="tname">Facturación</span><span class="lvl" id="lvlFact"></span></div>
-      <div class="v num" id="vFact">0 €</div>
+      <div class="v num" id="vFact">0 € <small id="cFact"></small></div>
       <div class="steps" id="stFact"></div>
       <div class="hint" id="hFact"></div>
+      <button class="pencil" id="editFact" aria-label="Escribir la facturación a mano">✎</button>
     </div>
     <div class="tile">
       <div class="t"><span class="tname">Score</span><span class="lvl" id="lvlScore"></span></div>
@@ -654,7 +655,8 @@
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
     <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
     <table id="infoAt"></table>
-    <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
+    <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % a mano.</p>
+    <p class="ov-note">La <b>facturación</b> también lleva su ✎: si la cifra del sistema no coincide con la suma de tus apuntes, escríbela y manda esa. Deja el campo vacío para volver a la suma automática.</p>
 
     <h4>Ventas y sueltos</h4>
     <p>Una <b>venta</b> es la de un aparato y es lo que divide en los porcentajes de attach. Todo lo que va por su cuenta (un accesorio, un phoneCare o un Insurama sin aparato) se apunta como <b>Libre</b>: suma a tu facturación y a tu score, y <b>no cuenta como venta</b>.</p>
@@ -1024,8 +1026,12 @@
     const autoSeg=nAt?nSeg/nAt*100:(nSeg>0?Infinity:null);
     const pctCare=(ov.care!=null)?ov.care:autoCare;
     const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
-    const t=computeTotals(fact,score,pctCare,pctSeg);
-    return Object.assign({ventas,fact,score,n,nAcc,nAt,nCare,nSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
+    // La facturación se puede escribir a mano si la del sistema no cuadra
+    const autoFact=fact;
+    const factFinal=(ov.fact!=null)?ov.fact:fact;
+    const t=computeTotals(factFinal,score,pctCare,pctSeg);
+    return Object.assign({ventas,fact:factFinal,autoFact,score,n,nAcc,nAt,nCare,nSeg,
+      autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
   }
 
   /* ===== Render ===== */
@@ -1104,7 +1110,8 @@
 
     // Facturación
     const LF=nivelesFact(), nextF=LF[c.tF.nivel];
-    $("vFact").textContent=fmtEUR0.format(c.fact);
+    $("vFact").firstChild.textContent=fmtEUR0.format(c.fact)+" ";
+    $("cFact").textContent=(c.ov.fact!=null)?"(manual)":"";
     setLvl("lvlFact",fmtMult.format(c.tF.pct)+" %",!nextF?"top":(c.tF.pct>0?"":"low"));
     setSteps("stFact",LF.length,c.tF.nivel,!nextF);
     if(nextF&&c.tF.hasta!=null){
@@ -1488,7 +1495,9 @@
     const nSeg=c.nSeg-(v.seguro?1:0);
     const pc=(c.ov.care!=null)?c.ov.care:(nAt?nCare/nAt*100:null);
     const ps=(c.ov.seg!=null)?c.ov.seg:(nAt?nSeg/nAt*100:null);
-    const sin=computeTotals(c.fact-v.amount, c.score-v.score, pc, ps).total;
+    // Con la facturación puesta a mano, quitar una venta no la cambia
+    const f=(c.ov.fact!=null)?c.fact:c.fact-v.amount;
+    const sin=computeTotals(f, c.score-v.score, pc, ps).total;
     return Math.round((c.total-sin)*100)/100;
   }
 
@@ -2000,11 +2009,19 @@
   function openOverride(key){
     ovKey=key;
     const c=computeMonth(view.y,view.m);
+    const cur=state.overrides[c.mk]&&state.overrides[c.mk][key];
+    $("ovInput").value=(cur!=null)?String(cur).replace(".",","):"";
+    if(key==="fact"){
+      $("ovTitle").textContent="Facturación · "+monthName(view.y,view.m);
+      $("ovLabel").textContent="Facturación del mes (€)";
+      $("ovAuto").textContent="Suma de tus apuntes: "+fmtEUR.format(c.autoFact)
+        +". Escribe aquí la cifra del sistema si no cuadra.";
+      document.getElementById("dlgOverride").showModal();
+      return;
+    }
     const label=key==="care"?"CARE":"SEGUROS";
     $("ovTitle").textContent="% Attach "+label+" · "+monthName(view.y,view.m);
     $("ovLabel").textContent="% "+label+" del mes";
-    const cur=state.overrides[c.mk]&&state.overrides[c.mk][key];
-    $("ovInput").value=(cur!=null)?String(cur).replace(".",","):"";
     const auto=key==="care"?c.autoCare:c.autoSeg;
     const nServ=key==="care"?c.nCare:c.nSeg;
     $("ovAuto").textContent = auto==null
@@ -2014,6 +2031,7 @@
         : ("Cálculo automático actual: "+fmtPct.format(auto)+" % ("+nServ+" de "+c.nAt+" ventas)");
     document.getElementById("dlgOverride").showModal();
   }
+  $("editFact").onclick=()=>openOverride("fact");
   $("editCare").onclick=()=>openOverride("care");
   $("editSeg").onclick=()=>openOverride("seg");
   $("ovSave").onclick=()=>{
@@ -2022,10 +2040,16 @@
     const val=parseDec($("ovInput").value);
     state.overrides[mk]=state.overrides[mk]||{};
     if(isNaN(val)) delete state.overrides[mk][ovKey];
+    else if(ovKey==="fact") state.overrides[mk].fact=Math.max(0,Math.round(val*100)/100);
     else state.overrides[mk][ovKey]=Math.max(0,Math.min(100,val));
     if(!Object.keys(state.overrides[mk]).length) delete state.overrides[mk];
     save(); document.getElementById("dlgOverride").close(); render();
     const post=computeMonth(view.y,view.m);
+    if(ovKey==="fact"){
+      toast(post.ov.fact!=null?"Facturación puesta a mano ✓":"Vuelve a sumarse de tus apuntes");
+      if(post.tF.nivel>pre.tF.nivel) confetti();
+      return;
+    }
     const preM=ovKey==="care"?pre.mCare:pre.mSeg, postM=ovKey==="care"?post.mCare:post.mSeg;
     if(postM>preM){ confetti(); toast("🎉 ¡Attach "+(ovKey==="care"?"CARE":"SEGUROS")+" sube a × "+fmtMult.format(postM)+"!",null,null,4000); }
   };
