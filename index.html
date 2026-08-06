@@ -1002,8 +1002,10 @@
     const nCare=ventas.filter(v=>v.care).length;
     const nSeg=ventas.filter(v=>v.seguro).length;
     const ov=state.overrides[mk]||{};
-    const autoCare=nAt?nCare/nAt*100:null;
-    const autoSeg=nAt?nSeg/nAt*100:null;
+    // Sin ventas de aparato no hay entre qué dividir. Si aun así has vendido
+    // servicios, no hay ningún aparato que se haya ido sin ellos: tramo alto.
+    const autoCare=nAt?nCare/nAt*100:(nCare>0?Infinity:null);
+    const autoSeg=nAt?nSeg/nAt*100:(nSeg>0?Infinity:null);
     const pctCare=(ov.care!=null)?ov.care:autoCare;
     const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
     const t=computeTotals(fact,score,pctCare,pctSeg);
@@ -1427,6 +1429,16 @@
       setLvl("lvl"+key,"× "+fmtMult.format(a.m1),"low");
       setSteps("st"+key,3,0,false);
       hint.textContent=nAcc?"Solo sueltos este mes":"Sin ventas todavía";
+      return;
+    }
+    if(!isFinite(pct)){
+      // Servicios vendidos y ninguna venta de aparato todavía
+      const svc=key==="Care"?"CARE":(nOk===1?"seguro":"seguros");
+      v.firstChild.textContent=fmtNum.format(nOk)+" ";
+      cnt.textContent=svc+" suelto"+(nOk===1?"":"s");
+      setLvl("lvl"+key,"× "+fmtMult.format(a.m3),"top");
+      setSteps("st"+key,3,3,true);
+      hint.textContent="Aún sin ventas de aparato";
       return;
     }
     v.firstChild.textContent=fmtPct.format(pct)+" % ";
@@ -1978,9 +1990,12 @@
     const cur=state.overrides[c.mk]&&state.overrides[c.mk][key];
     $("ovInput").value=(cur!=null)?String(cur).replace(".",","):"";
     const auto=key==="care"?c.autoCare:c.autoSeg;
-    $("ovAuto").textContent=auto!=null
-      ?("Cálculo automático actual: "+fmtPct.format(auto)+" % ("+(key==="care"?c.nCare:c.nSeg)+" de "+c.n+" ventas)")
-      :"Aún no hay ventas para el cálculo automático.";
+    const nServ=key==="care"?c.nCare:c.nSeg;
+    $("ovAuto").textContent = auto==null
+      ? "Aún no hay ventas para el cálculo automático."
+      : !isFinite(auto)
+        ? ("Llevas "+nServ+" servicio"+(nServ===1?"":"s")+" y ninguna venta de aparato, así que cuenta como tramo alto.")
+        : ("Cálculo automático actual: "+fmtPct.format(auto)+" % ("+nServ+" de "+c.nAt+" ventas)");
     document.getElementById("dlgOverride").showModal();
   }
   $("editCare").onclick=()=>openOverride("care");
