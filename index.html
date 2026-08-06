@@ -856,6 +856,22 @@
     }catch(e){}
     return {ventas:[], overrides:{}};
   }
+  // Antes de arreglarlo, un servicio suelto se guardaba como venta y ensuciaba
+  // el divisor del attach. Se corrigen esos apuntes: los que solo llevan líneas
+  // del catálogo, sin aparato ni importe escrito a mano, pasan a Libre.
+  function migrarSueltos(){
+    let n=0;
+    state.ventas.forEach(v=>{
+      if(v.acc||!Array.isArray(v.items)||!v.items.length) return;
+      if(v.items.some(i=>i.eq)) return;
+      const suma=v.items.reduce((a,i)=>a+(Number(i.p)||0),0);
+      if(Math.abs(suma-(Number(v.amount)||0))>0.01) return;
+      v.acc=true; n++;
+    });
+    if(n) save();
+    return n;
+  }
+
   // Copia previa a una acción destructiva, para poder deshacerla
   function snapshot(){ return JSON.parse(JSON.stringify({state:state,cfg:cfg})); }
   function restore(snap){
@@ -2186,9 +2202,11 @@
   // Se lee antes de resetForm, que es quien limpia el borrador
   let borrador=null;
   try{ borrador=localStorage.getItem(DRAFT); }catch(e){}
+  const corregidos=migrarSueltos();
   resetForm();
   render();
-  if(borrador&&restaurarBorrador(borrador)) toast("Recuperado lo que estabas apuntando");
+  if(corregidos) toast(corregidos+" apunte"+(corregidos===1?"":"s")+" corregido"+(corregidos===1?"":"s")+" a Libre",null,null,5000);
+  else if(borrador&&restaurarBorrador(borrador)) toast("Recuperado lo que estabas apuntando");
 
   // Modo sin conexión (solo cuando se sirve desde un servidor con sw.js, p.ej. GitHub Pages)
   if("serviceWorker" in navigator && location.protocol==="https:"){
