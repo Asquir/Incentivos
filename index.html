@@ -1598,7 +1598,17 @@
     );
     CATALOGO.forEach(it=>{
       if(!it.mio&&PRECIOS[it.n]!=null) it.p=PRECIOS[it.n];
-      it.k=norm(it.n+" "+it.sku+" "+it.g);
+      let extra="";
+      if(it.n.indexOf("TSM_")===0){
+        // Los TSM del Excel son los seguros de Insurama
+        it.n="Insurama "+it.n.slice(4).replace(/_/g," ");
+        it.g=it.g==="TSM MULTI"?"Insurama Multi":"Insurama";
+        it.c="g";
+        extra=" tsm";                       // se siguen encontrando escribiendo tsm
+      } else if(it.g==="TSM"||it.g==="TSM MULTI"){
+        it.g="";                            // arrastre de etiqueta en la hoja
+      }
+      it.k=norm(it.n+" "+it.sku+" "+it.g+extra);
     });
   }
   construirIndice();
