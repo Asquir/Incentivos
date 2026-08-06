@@ -50,16 +50,24 @@ Ejemplo verificado contra el email: 55.000 € → 137,50 € → × 2,25 (346 s
 
 El % de attach se calcula automáticamente como *ventas con CARE (o SEGURO) ÷
 ventas totales del mes*. Si en la tienda lo miden de otra forma, se puede
-escribir el % a mano con el botón ✎ de cada ficha.
+escribir el % a mano con el botón ✎ de cada ficha. Lo mismo vale para la
+facturación y el score: con el ✎ de su ficha se escribe la cifra del sistema
+y esa manda sobre la suma de los apuntes hasta que se borre.
 
 ## Funciones
 
 - Alta de venta en segundos: importe, score y botones CARE / SEGURO.
-- Buscador con el catálogo de la empresa (2.073 servicios y accesorios con su
+- Buscador con el catálogo de la empresa (2.149 servicios y accesorios con su
   precio y su score): al elegir un producto rellena importe, score y nota.
   Entiende las abreviaturas de tienda (buscar "funda" encuentra "FUN IPH16…")
-  y coloca arriba lo que más apuntas. La tarifa de servicios (Retail o
-  Retail POS) se elige en Ajustes.
+  y coloca arriba lo que más apuntas.
+- Búsqueda por SKU: están los 2.197 SKU del Excel, incluidos los de la tarifa
+  Retail POS y los de las referencias que comparten nombre. Al buscar por
+  referencia el resultado enseña cuál ha encontrado.
+- Los productos propios (móviles, Macs… que no vienen en el Excel) pueden
+  llevar también su SKU. Si lo que se escribe en el buscador parece una
+  referencia, al crear el producto ya va puesta en su sitio. En Ajustes se
+  tocan para editarlos.
 - Apunte de **accesorios**: suman a facturación y score, pero quedan fuera del
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
