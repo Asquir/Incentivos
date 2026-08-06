@@ -883,6 +883,28 @@
     return n;
   }
 
+  // Las cifras escritas a mano antes se quedaban congeladas. Ahora son un punto
+  // de partida al que se le suma lo que apuntes después, así que a las guardadas
+  // sin base se les pone la de hoy: se quedan como están y a partir de aquí suman.
+  function migrarBases(){
+    let n=0;
+    Object.keys(state.overrides||{}).forEach(mk=>{
+      const ov=state.overrides[mk];
+      const p=mk.split("-"), y=+p[0], m=+p[1]-1;
+      if(!(y>0)||!(m>=0&&m<12)) return;
+      if((ov.fact==null||ov.factBase!=null)&&(ov.score==null||ov.scoreBase!=null)) return;
+      const vs=state.ventas.filter(v=>v.date&&v.date.slice(0,7)===mk);
+      if(ov.fact!=null&&ov.factBase==null){
+        ov.factBase=vs.reduce((a,v)=>a+(Number(v.amount)||0),0); n++;
+      }
+      if(ov.score!=null&&ov.scoreBase==null){
+        ov.scoreBase=vs.reduce((a,v)=>a+(Number(v.score)||0),0); n++;
+      }
+    });
+    if(n) save();
+    return n;
+  }
+
   // Copia previa a una acción destructiva, para poder deshacerla
   function snapshot(){ return JSON.parse(JSON.stringify({state:state,cfg:cfg})); }
   function restore(snap){
@@ -1035,10 +1057,12 @@
     const autoSeg=nAt?nSeg/nAt*100:(nSeg>0?Infinity:null);
     const pctCare=(ov.care!=null)?ov.care:autoCare;
     const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
-    // La facturación se puede escribir a mano si la del sistema no cuadra
+    // La facturación se puede escribir a mano si la del sistema no cuadra.
+    // Lo escrito es el punto de partida, no un número congelado: lo que apuntes
+    // después se le sigue sumando (base = lo que sumaban tus apuntes al escribirlo).
     const autoFact=fact, autoScore=score;
-    const factFinal=(ov.fact!=null)?ov.fact:fact;
-    const scoreFinal=(ov.score!=null)?ov.score:score;
+    const factFinal=(ov.fact!=null)?Math.max(0,ov.fact+(autoFact-(ov.factBase!=null?ov.factBase:autoFact))):fact;
+    const scoreFinal=(ov.score!=null)?Math.max(0,ov.score+(autoScore-(ov.scoreBase!=null?ov.scoreBase:autoScore))):score;
     const t=computeTotals(factFinal,scoreFinal,pctCare,pctSeg);
     return Object.assign({ventas,fact:factFinal,autoFact,score:scoreFinal,autoScore,n,nAcc,nAt,nCare,nSeg,
       autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
@@ -1534,9 +1558,9 @@
     const nSeg=c.nSeg-(v.seguro?1:0);
     const pc=(c.ov.care!=null)?c.ov.care:(nAt?nCare/nAt*100:null);
     const ps=(c.ov.seg!=null)?c.ov.seg:(nAt?nSeg/nAt*100:null);
-    // Con la facturación puesta a mano, quitar una venta no la cambia
-    const f=(c.ov.fact!=null)?c.fact:c.fact-v.amount;
-    const s=(c.ov.score!=null)?c.score:c.score-v.score;
+    // Aunque estén puestas a mano, cada venta sigue sumándose encima
+    const f=Math.max(0,c.fact-v.amount);
+    const s=Math.max(0,c.score-v.score);
     const sin=computeTotals(f, s, pc, ps).total;
     return Math.round((c.total-sin)*100)/100;
   }
@@ -2060,11 +2084,17 @@
     $("ovInput").value=(cur!=null)?String(cur).replace(".",","):"";
     if(key==="fact"||key==="score"){
       const esFact=key==="fact";
+      // Se rellena con la cifra que se ve ahora, no con la que se escribió en su
+      // día: lo apuntado desde entonces ya está sumado y así se corrige sobre eso
+      if(cur!=null){
+        const vis=esFact?c.fact:c.score;
+        $("ovInput").value=String(Math.round(vis*100)/100).replace(".",",");
+      }
       $("ovTitle").textContent=(esFact?"Facturación · ":"Score · ")+monthName(view.y,view.m);
       $("ovLabel").textContent=esFact?"Facturación del mes (€)":"Score del mes";
       $("ovAuto").textContent="Suma de tus apuntes: "
         +(esFact?fmtEUR.format(c.autoFact):fmtNum.format(c.autoScore))
-        +". Escribe aquí la cifra del sistema si no cuadra.";
+        +". Escribe la cifra del sistema si no cuadra: a partir de ahí, lo que apuntes se le sigue sumando.";
       document.getElementById("dlgOverride").showModal();
       return;
     }
@@ -2089,8 +2119,16 @@
     const pre=computeMonth(view.y,view.m);
     const val=parseDec($("ovInput").value);
     state.overrides[mk]=state.overrides[mk]||{};
-    if(isNaN(val)) delete state.overrides[mk][ovKey];
-    else if(ovKey==="fact"||ovKey==="score") state.overrides[mk][ovKey]=Math.max(0,Math.round(val*100)/100);
+    if(isNaN(val)){
+      delete state.overrides[mk][ovKey];
+      delete state.overrides[mk][ovKey+"Base"];
+    }
+    else if(ovKey==="fact"||ovKey==="score"){
+      state.overrides[mk][ovKey]=Math.max(0,Math.round(val*100)/100);
+      // Se guarda cuánto sumaban los apuntes en este momento: lo que venga
+      // después se suma encima en vez de quedarse la cifra congelada
+      state.overrides[mk][ovKey+"Base"]=(ovKey==="fact")?pre.autoFact:pre.autoScore;
+    }
     else state.overrides[mk][ovKey]=Math.max(0,Math.min(100,val));
     if(!Object.keys(state.overrides[mk]).length) delete state.overrides[mk];
     save(); document.getElementById("dlgOverride").close(); render();
@@ -2214,7 +2252,8 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:""})):[]};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
+          migrarBases();
           construirIndice();
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
           save(); resetForm(); render();
@@ -2278,6 +2317,7 @@
   let borrador=null;
   try{ borrador=localStorage.getItem(DRAFT); }catch(e){}
   const corregidos=migrarSueltos();
+  migrarBases();
   resetForm();
   render();
   if(corregidos) toast(corregidos+" apunte"+(corregidos===1?"":"s")+" corregido"+(corregidos===1?"":"s")+" a Libre",null,null,5000);
