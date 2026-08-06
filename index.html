@@ -573,7 +573,7 @@
       <h3 id="formTitle">Nueva venta</h3>
       <div class="seg" id="segTipo" role="group" aria-label="Tipo de apunte">
         <button type="button" id="segVenta" class="on">Venta</button>
-        <button type="button" id="segAcc">Accesorio</button>
+        <button type="button" id="segAcc">Libre</button>
       </div>
     </div>
     <div class="picker">
@@ -595,7 +595,7 @@
       <button class="tog" id="tCare" type="button">+ CARE</button>
       <button class="tog" id="tSeg" type="button">+ SEGURO</button>
     </div>
-    <p class="accnote" id="accNote" hidden>Suma a tu facturación y a tu score, pero no cuenta para los porcentajes de CARE y seguros.</p>
+    <p class="accnote" id="accNote" hidden>Accesorios y servicios sueltos: suman a tu facturación y a tu score, pero no cuentan para los porcentajes de CARE y seguros.</p>
     <div class="fmeta">
       <label class="datechip" id="dateChip">
         <span aria-hidden="true">📅</span>
@@ -656,8 +656,9 @@
     <table id="infoAt"></table>
     <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
 
-    <h4>Accesorios</h4>
-    <p>Los accesorios se apuntan con el botón <b>Accesorio</b> del formulario. Suman a tu facturación y a tu score igual que una venta, pero <b>no cuentan en el porcentaje de CARE ni de seguros</b>, así que no te bajan el attach.</p>
+    <h4>Ventas y sueltos</h4>
+    <p>Una <b>venta</b> es la de un aparato: cuenta para los porcentajes de CARE y de seguros. Todo lo que va por su cuenta (un accesorio, un phoneCare o un Insurama sin aparato) se apunta como <b>Libre</b>: suma a tu facturación y a tu score, pero <b>no toca los porcentajes</b>.</p>
+    <p>La app lo decide sola: si escribes un importe a mano o añades un producto tuyo, hay aparato y es una venta; si no, es suelto. Puedes cambiarlo con el selector y manda tu elección.</p>
 
     <h4>Varios productos en una misma venta</h4>
     <p>Escribe el importe del aparato y luego ve <b>añadiendo servicios y accesorios con el buscador</b>: cada uno suma su precio y su score al total. Puedes buscar por nombre o por <b>SKU</b>.</p>
@@ -1422,7 +1423,7 @@
       cnt.textContent="";
       setLvl("lvl"+key,"× "+fmtMult.format(a.m1),"low");
       setSteps("st"+key,3,0,false);
-      hint.textContent=nAcc?"Solo accesorios este mes":"Sin ventas todavía";
+      hint.textContent=nAcc?"Solo sueltos este mes":"Sin ventas todavía";
       return;
     }
     v.firstChild.textContent=fmtPct.format(pct)+" % ";
@@ -1499,7 +1500,7 @@
           +(ap>0.005?"+":"")+fmtEUR.format(ap)+" para ti</span></div>"
           +'<div class="meta">'
           +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
-          +(v.acc?'<span class="chip acc">ACCESORIO</span>':"")
+          +(v.acc?'<span class="chip acc">LIBRE</span>':"")
           +(v.care?'<span class="chip care">CARE</span>':"")
           +(v.seguro?'<span class="chip seg">SEGURO</span>':"")
           +((v.items&&v.items.length)?'<span class="note">'+esc(v.items.map(x=>x.n).join(" + "))+"</span>"
@@ -1536,8 +1537,8 @@
     $("segVenta").className=esAcc?"":"on";
     $("segAcc").className=esAcc?"on":"";
     if(!editingId){
-      $("btnSave").textContent=esAcc?"Añadir accesorio":"Añadir venta";
-      $("formTitle").textContent=esAcc?"Nuevo accesorio":"Nueva venta";
+      $("btnSave").textContent=esAcc?"Añadir suelto":"Añadir venta";
+      $("formTitle").textContent=esAcc?"Suelto · no cuenta para %":"Nueva venta";
     }
   }
   let careManual=false, segManual=false;
@@ -1756,10 +1757,11 @@
     // Si lo has puesto tú a mano, manda tu decisión.
     if(!careManual) togCare=lineas.some(l=>l.c==="c");
     if(!segManual) togSeg=lineas.some(l=>l.c==="g");
-    // Solo se marca como accesorio si no hay aparato ni servicio: ni importe a mano,
-    // ni CARE o seguro, ni ningún producto tuyo (un iPhone que hayas creado no es accesorio)
+    // Sin aparato no es una venta, es algo suelto: un seguro o un servicio por su
+    // cuenta suma facturación y score pero no debe tocar los porcentajes de attach.
+    // Hay aparato si has escrito el importe a mano o si has añadido un producto tuyo.
     if(!tipoManual&&lineas.length){
-      esAcc = !baseP && !lineas.some(l=>l.c) && lineas.every(l=>l.ac);
+      esAcc = !baseP && !lineas.some(l=>l.eq);
     }
     refreshTogs();
     pintarLineas();
@@ -1788,8 +1790,8 @@
   $("fNote").addEventListener("input",guardarBorrador);
 
   function anadirLinea(it){
-    // ac=1 solo para los accesorios del catálogo; tus productos son aparatos
-    lineas.push({n:it.n,p:it.p,s:it.s,c:it.c,ac:(it.srv===0&&!it.mio)?1:0});
+    // ac=accesorio del catálogo · eq=producto tuyo, o sea un aparato
+    lineas.push({n:it.n,p:it.p,s:it.s,c:it.c,ac:(it.srv===0&&!it.mio)?1:0,eq:it.mio?1:0});
     recalcular();
     $("fBuscar").value="";
     $("fBuscar").focus();          // encadena varios productos del mismo ticket
@@ -1811,7 +1813,7 @@
     if(bc){
       e.preventDefault();
       const c=box._combo; if(!c) return;
-      c.items.forEach(i=>lineas.push({n:i.n,p:i.p,s:i.s,c:i.c,ac:i.ac||0}));
+      c.items.forEach(i=>lineas.push({n:i.n,p:i.p,s:i.s,c:i.c,ac:i.ac||0,eq:i.eq||0}));
       recalcular();
       $("fBuscar").value=""; $("fBuscar").focus(); box.hidden=true;
       toast("Añadido lo de siempre · "+c.items.length+" productos");
@@ -1854,7 +1856,7 @@
     if(amt===0&&sc===0&&!togCare&&!togSeg){ $("fAmount").focus(); return; }
     const acc=esAcc;
     const d=new Date(date+"T12:00:00");
-    const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c,ac:l.ac||0}));
+    const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c,ac:l.ac||0,eq:l.eq||0}));
     const nueva={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim(),items:items};
     if(editingId){
       const pre=computeMonth(d.getFullYear(),d.getMonth());
@@ -1912,7 +1914,7 @@
     if(metaHecha){ confetti(); msg="🎯 ¡Objetivo del mes conseguido! "+fmtEUR0.format(meta); }
     else if(down) msg=down;
     else if(up){ confetti(); msg=up; }
-    else msg = nv ? (nv.acc?"Accesorio añadido ✓":"Venta añadida ✓") : "Cambios guardados ✓";
+    else msg = nv ? (nv.acc?"Apuntado como suelto ✓":"Venta añadida ✓") : "Cambios guardados ✓";
     // Duplicar se ofrece siempre en un alta (varias unidades iguales al mismo cliente),
     // también cuando el mensaje es de subida o bajada de tramo
     if(nv) toast(msg,"Duplicar",()=>guardarNueva(Object.assign({},nv,{id:uid(),ts:Date.now()})),5000);
@@ -1951,7 +1953,7 @@
       togCare=!!v.care; togSeg=!!v.seguro; esAcc=!!v.acc;
       careManual=true; segManual=true; tipoManual=true;   // se respeta lo que ya tenía guardado
       refreshTogs(); refreshDateChip();
-      $("formTitle").textContent=v.acc?"Editar accesorio":"Editar venta";
+      $("formTitle").textContent=v.acc?"Editar suelto":"Editar venta";
       $("btnSave").textContent="Guardar cambios";
       $("btnCancelEdit").hidden=false;
       $("formCard").scrollIntoView({behavior:"smooth",block:"center"});
