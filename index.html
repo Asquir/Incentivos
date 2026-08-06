@@ -691,6 +691,7 @@
 
     <h4>El ritmo que necesitas</h4>
     <p>Si te has puesto un objetivo, la línea de abajo del incentivo deja de estimar y te dice <b>cuánto tienes que facturar al día</b> con los días que quedan para llegar. Sin objetivo, sigue mostrando la proyección.</p>
+    <p class="ov-note">Cuenta solo <b>los días que trabajas</b>: en Ajustes se pone cuántos libras a la semana (2 por defecto) y la app descuenta los que no vas a estar. Si libras dos y quedan 14 días de calendario, quedan 10 tuyos, y el ritmo diario sube en consecuencia.</p>
 
     <h4>Las ventas que se te escaparon</h4>
     <p>Al desplegar las ventas del mes hay un filtro <b>Se escaparon</b>: las que salieron sin CARE y sin seguro. Son las que te están frenando el attach, y al verlas juntas se detecta el patrón.</p>
@@ -699,8 +700,8 @@
     <p>Sobre la gráfica de evolución aparece si vas mejor o peor que el mes anterior. La comparación es justa: coge el mes pasado <b>hasta el mismo día</b> en el que estás hoy, no el mes entero.</p>
 
     <h4>La proyección de fin de mes</h4>
-    <p>Coge lo que llevas facturado y de score, lo divide entre los días transcurridos del mes y lo multiplica por los días totales. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
-    <p class="ov-note">Ejemplo: el día 10 llevas 20.000 € → 2.000 €/día → 62.000 € estimados a 31 días. Aparece a partir del séptimo día del mes, porque antes hay pocos datos y la cifra se dispara.</p>
+    <p>Coge lo que llevas facturado y de score, lo divide entre los <b>días trabajados</b> del mes y lo multiplica por los que vas a trabajar en total. Con esa estimación vuelve a aplicar la fórmula entera, manteniendo tus porcentajes de attach actuales.</p>
+    <p class="ov-note">Ejemplo librando dos días: el día 10 llevas 20.000 € en 7 días currados → 2.857 €/día → 22 días de trabajo en el mes → 62.857 € estimados. Aparece a partir del séptimo día del mes, porque antes hay pocos datos y la cifra se dispara.</p>
 
     <h4>Ejemplo del email</h4>
     <p class="num">55.000 € × 0,25 % = 137,50 € → × 2,25 (346 score) = 309,37 € → × 1,35 × 1,35 (48 % CARE, 45 % seguros) = <b>563,83 €</b></p>
@@ -725,6 +726,10 @@
   <div class="mbody">
     <h3>Ajustes de la fórmula</h3>
     <p class="sub">Si la empresa cambia las tablas, actualízalas aquí y los cálculos se ajustan solos.</p>
+
+    <h4>Tus días libres</h4>
+    <p class="ov-note">Para que el ritmo y la proyección cuenten los días que trabajas de verdad, no los del calendario.</p>
+    <div class="ov-field"><label for="cfgLibro">Días que libro a la semana</label><input id="cfgLibro" inputmode="numeric"></div>
 
     <h4>Tramos de facturación</h4>
     <table class="cfgt">
@@ -1126,15 +1131,19 @@
       const dim=new Date(view.y,view.m+1,0).getDate();
       // Con menos de una semana los datos dan proyecciones disparatadas
       if(day>=7&&day<dim){
-        const quedan=dim-day;
-        const falta=ritmoObjetivo(c);
+        // Se cuentan los días que trabajas, no los del calendario
+        const hechos=Math.max(1,diasCurrados(day));
+        const totales=Math.max(hechos,diasCurrados(dim));
+        const quedan=totales-hechos;
+        const nd=libraSemana()>0?" de trabajo":"";
+        const falta=quedan>0?ritmoObjetivo(c):null;
         if(falta!=null){
           // Con objetivo puesto interesa más el ritmo que hace falta que la proyección
-          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · para tu objetivo, <b class=\"num\">~"
+          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+nd+"</b> · para tu objetivo, <b class=\"num\">~"
             +fmtEUR0.format(falta/quedan)+"/día</b>";
         } else {
-          const pr=computeTotals(c.fact/day*dim, c.score/day*dim, c.pctCare, c.pctSeg);
-          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · a este ritmo acabarás con <b class=\"num\">~"
+          const pr=computeTotals(c.fact/hechos*totales, c.score/hechos*totales, c.pctCare, c.pctSeg);
+          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+nd+"</b> · a este ritmo acabarás con <b class=\"num\">~"
             +fmtEUR0.format(pr.total)+"</b>";
         }
       }
@@ -1323,6 +1332,19 @@
     state.propios.splice(+b.dataset.mio,1);
     save(); construirIndice(); pintarMisProductos();
   });
+
+  /* ===== Días de trabajo ===== */
+  // Las cuentas por día no valen con los días del calendario: si libras dos a la
+  // semana, los que quedan de verdad son menos y el ritmo diario es más alto.
+  function libraSemana(){
+    const v=Number(state.libro);
+    return (v>=0&&v<=6)?Math.round(v):2;
+  }
+  function diasCurrados(n){
+    const trab=7-libraSemana();
+    if(trab>=7) return Math.max(0,n);
+    return Math.max(0,Math.round(n*trab/7));
+  }
 
   /* ===== Ritmo necesario para el objetivo ===== */
   // Cuánto habría que facturar (subiendo score en la misma proporción) para llegar
@@ -2177,6 +2199,7 @@
     $("cfgM2").value=String(cfg.at.m2).replace(".",",");
     $("cfgM3").value=String(cfg.at.m3).replace(".",",");
     $("cfgCol").value=String(cfg.col).replace(".",",");
+    $("cfgLibro").value=String(libraSemana());
     pintarMisProductos();
     document.getElementById("dlgCfg").showModal();
   }
@@ -2189,6 +2212,7 @@
     nc.score=cfg.score.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfS"+i,t.hasta)),mult:Math.max(0,val("cfM"+i,t.mult))}));
     nc.at={t1:val("cfgT1",cfg.at.t1),t2:val("cfgT2",cfg.at.t2),m1:val("cfgM1",cfg.at.m1),m2:val("cfgM2",cfg.at.m2),m3:val("cfgM3",cfg.at.m3)};
     nc.col=Math.max(0,val("cfgCol",cfg.col));
+    state.libro=Math.max(0,Math.min(6,Math.round(val("cfgLibro",libraSemana()))));
     // Los topes deben ir de menor a mayor para que los tramos tengan sentido
     const asc=a=>a.every((t,i)=>i===0||t.hasta==null||a[i-1].hasta==null||t.hasta>a[i-1].hasta);
     if(!asc(nc.fact)||!asc(nc.score)){ toast("⚠️ Los topes deben ir de menor a mayor"); return; }
@@ -2252,7 +2276,7 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
           migrarBases();
           construirIndice();
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }

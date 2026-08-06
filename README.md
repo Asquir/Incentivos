@@ -75,7 +75,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
-- Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €".
+- Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €". Cuenta
+  **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
+  libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"
+  del objetivo descuentan los que no se trabaja.
 - Consejo del mes: calcula qué único movimiento sube más el incentivo.
 - Aviso de riesgo: cuando quedan una o ninguna venta de margen antes de
   caer de tramo de attach, avisa y cifra lo que se perdería. Las fichas
