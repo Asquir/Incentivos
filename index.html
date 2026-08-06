@@ -595,7 +595,7 @@
       <button class="tog" id="tCare" type="button">+ CARE</button>
       <button class="tog" id="tSeg" type="button">+ SEGURO</button>
     </div>
-    <p class="accnote" id="accNote" hidden>Accesorios y servicios sueltos: suman a tu facturación y a tu score, pero no cuentan para los porcentajes de CARE y seguros.</p>
+    <p class="accnote" id="accNote" hidden>No cuenta como venta para los porcentajes. Si lleva CARE o seguro, ese servicio sí suma.</p>
     <div class="fmeta">
       <label class="datechip" id="dateChip">
         <span aria-hidden="true">📅</span>
@@ -657,7 +657,8 @@
     <p class="ov-note" style="margin-top:8px">La app calcula el attach como ventas con CARE (o SEGURO) ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % manualmente.</p>
 
     <h4>Ventas y sueltos</h4>
-    <p>Una <b>venta</b> es la de un aparato: cuenta para los porcentajes de CARE y de seguros. Todo lo que va por su cuenta (un accesorio, un phoneCare o un Insurama sin aparato) se apunta como <b>Libre</b>: suma a tu facturación y a tu score, pero <b>no toca los porcentajes</b>.</p>
+    <p>Una <b>venta</b> es la de un aparato y es lo que divide en los porcentajes de attach. Todo lo que va por su cuenta (un accesorio, un phoneCare o un Insurama sin aparato) se apunta como <b>Libre</b>: suma a tu facturación y a tu score, y <b>no cuenta como venta</b>.</p>
+    <p>Pero si ese suelto es un servicio, <b>sí suma al porcentaje</b>: un phoneCare sin aparato cuenta como CARE aunque no cuente como venta. Por eso el attach puede pasar del 100 %, igual que en la hoja de la empresa.</p>
     <p>La app lo decide sola: si escribes un importe a mano o añades un producto tuyo, hay aparato y es una venta; si no, es suelto. Puedes cambiarlo con el selector y manda tu elección.</p>
 
     <h4>Varios productos en una misma venta</h4>
@@ -993,11 +994,13 @@
     const fact=ventas.reduce((a,v)=>a+v.amount,0);
     const score=ventas.reduce((a,v)=>a+v.score,0);
     const n=ventas.length;
-    // Los accesorios suman facturación y score, pero no entran en el attach
+    // Attach = servicios vendidos ÷ ventas de aparato. Los sueltos no son ventas,
+    // así que no van en el divisor, pero el servicio que lleven sí suma arriba:
+    // por eso el porcentaje puede pasar del 100 %.
     const nAcc=ventas.filter(v=>v.acc).length;
     const nAt=n-nAcc;
-    const nCare=ventas.filter(v=>v.care&&!v.acc).length;
-    const nSeg=ventas.filter(v=>v.seguro&&!v.acc).length;
+    const nCare=ventas.filter(v=>v.care).length;
+    const nSeg=ventas.filter(v=>v.seguro).length;
     const ov=state.overrides[mk]||{};
     const autoCare=nAt?nCare/nAt*100:null;
     const autoSeg=nAt?nSeg/nAt*100:null;
@@ -1133,7 +1136,7 @@
     if(!v.length) return null;
     const fact=v.reduce((a,x)=>a+x.amount,0), score=v.reduce((a,x)=>a+x.score,0);
     const nAcc=v.filter(x=>x.acc).length, nAt=v.length-nAcc;
-    const nCare=v.filter(x=>x.care&&!x.acc).length, nSeg=v.filter(x=>x.seguro&&!x.acc).length;
+    const nCare=v.filter(x=>x.care).length, nSeg=v.filter(x=>x.seguro).length;
     const ov=state.overrides[mk]||{};
     const pc=(ov.care!=null)?ov.care:(nAt?nCare/nAt*100:null);
     const ps=(ov.seg!=null)?ov.seg:(nAt?nSeg/nAt*100:null);
@@ -1453,8 +1456,8 @@
   // Al ser una fórmula de multiplicaciones, una venta sin servicios puede restar.
   function aporta(c,v){
     const nAt=c.nAt-(v.acc?0:1);
-    const nCare=c.nCare-((v.care&&!v.acc)?1:0);
-    const nSeg=c.nSeg-((v.seguro&&!v.acc)?1:0);
+    const nCare=c.nCare-(v.care?1:0);
+    const nSeg=c.nSeg-(v.seguro?1:0);
     const pc=(c.ov.care!=null)?c.ov.care:(nAt?nCare/nAt*100:null);
     const ps=(c.ov.seg!=null)?c.ov.seg:(nAt?nSeg/nAt*100:null);
     const sin=computeTotals(c.fact-v.amount, c.score-v.score, pc, ps).total;
@@ -1531,8 +1534,7 @@
     $("tCare").textContent=(togCare?"✓ CARE":"+ CARE");
     $("tSeg").className="tog"+(togSeg?" on":"");
     $("tSeg").textContent=(togSeg?"✓ SEGURO":"+ SEGURO");
-    // Un accesorio no lleva CARE ni seguro: se ocultan en vez de estorbar
-    $("togRow").hidden=esAcc;
+    // También un suelto puede llevar CARE o seguro: el servicio suma al porcentaje
     $("accNote").hidden=!esAcc;
     $("segVenta").className=esAcc?"":"on";
     $("segAcc").className=esAcc?"on":"";
