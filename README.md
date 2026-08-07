@@ -49,9 +49,11 @@ Ejemplo verificado contra el email: 55.000 € → 137,50 € → × 2,25 (346 s
 = 309,37 € → × 1,35 × 1,35 = **563,83 €**.
 
 El % de attach se calcula automáticamente como *ventas con CARE (o SEGURO) ÷
-ventas totales del mes*. Si en la tienda lo miden de otra forma, se puede
-escribir el % a mano con el botón ✎ de cada ficha. Lo mismo vale para la
-facturación y el score: con el ✎ de su ficha se escribe la cifra del sistema.
+ventas totales del mes*. Si el número no cuadra con el del sistema, el ✎ de
+esas dos fichas pide **cuántos CARE o seguros llevas** — un número, no un
+porcentaje: el % lo saca la app dividiendo entre las ventas. Lo mismo vale
+para la facturación y el score: con el ✎ de su ficha se escribe la cifra del
+sistema.
 Esa cifra no se queda congelada, es el **punto de partida**: lo que se apunte
 después se le sigue sumando (y lo que se borre, restando). Al volver a abrir
 el ✎ aparece la cifra de ese momento, para corregir sobre ella. Dejando el

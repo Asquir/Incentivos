@@ -172,6 +172,7 @@
   .lvl.top{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
   .lvl.low{background:var(--surface2);color:var(--muted);border-color:var(--line)}
   .pencil{position:absolute;bottom:6px;right:7px;background:none;border:none;padding:5px;cursor:pointer;font-size:12px;color:var(--muted);border-radius:6px;opacity:.55}
+  .pencil.set{opacity:1;color:var(--gold-ink)}
   .tile.att .hint{padding-right:22px}
 
   /* ---------- Add form ---------- */
@@ -660,7 +661,7 @@
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
     <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
     <table id="infoAt"></table>
-    <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si en tu tienda lo miden distinto, pulsa ✎ en la ficha y escribe el % a mano.</p>
+    <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si el número no cuadra con el del sistema, pulsa ✎ en la ficha y escribe <b>cuántos CARE o seguros llevas</b>: el porcentaje lo saca ella sola, y lo que apuntes después se le sigue sumando.</p>
     <p class="ov-note">La <b>facturación</b> también lleva su ✎: si la cifra del sistema no coincide con la suma de tus apuntes, escríbela y manda esa. Deja el campo vacío para volver a la suma automática.</p>
 
     <h4>Ventas y sueltos</h4>
@@ -1053,13 +1054,19 @@
     // por eso el porcentaje puede pasar del 100 %.
     const nAcc=ventas.filter(v=>v.acc).length;
     const nAt=n-nAcc;
-    const nCare=ventas.filter(v=>v.care).length;
-    const nSeg=ventas.filter(v=>v.seguro).length;
+    const autoNCare=ventas.filter(v=>v.care).length;
+    const autoNSeg=ventas.filter(v=>v.seguro).length;
     const ov=state.overrides[mk]||{};
+    // Se puede escribir a mano cuántos CARE y seguros llevas. Como con la
+    // facturación, es el punto de partida: lo que apuntes después se le suma.
+    const conBase=(v,base,auto)=>Math.max(0,v+(auto-(base!=null?base:auto)));
+    const nCare=(ov.nCare!=null)?conBase(ov.nCare,ov.nCareBase,autoNCare):autoNCare;
+    const nSeg=(ov.nSeg!=null)?conBase(ov.nSeg,ov.nSegBase,autoNSeg):autoNSeg;
     // Sin ventas de aparato no hay entre qué dividir. Si aun así has vendido
     // servicios, no hay ningún aparato que se haya ido sin ellos: tramo alto.
     const autoCare=nAt?nCare/nAt*100:(nCare>0?Infinity:null);
     const autoSeg=nAt?nSeg/nAt*100:(nSeg>0?Infinity:null);
+    // ov.care / ov.seg son porcentajes de antes de poder escribir el número
     const pctCare=(ov.care!=null)?ov.care:autoCare;
     const pctSeg=(ov.seg!=null)?ov.seg:autoSeg;
     // La facturación se puede escribir a mano si la del sistema no cuadra.
@@ -1070,7 +1077,7 @@
     const scoreFinal=(ov.score!=null)?Math.max(0,ov.score+(autoScore-(ov.scoreBase!=null?ov.scoreBase:autoScore))):score;
     const t=computeTotals(factFinal,scoreFinal,pctCare,pctSeg);
     return Object.assign({ventas,fact:factFinal,autoFact,score:scoreFinal,autoScore,n,nAcc,nAt,nCare,nSeg,
-      autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
+      autoNCare,autoNSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
   }
 
   /* ===== Render ===== */
@@ -1176,8 +1183,8 @@
     }
 
     // Attach
-    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc);
-    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc);
+    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc,c.ov.nCare!=null);
+    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc,c.ov.nSeg!=null);
 
     // Lista
     // En el mes en curso interesa saber qué llevas HOY sin tener que desplegar
@@ -1529,8 +1536,11 @@
     return (opts[0]&&opts[0].gain>0.005)?opts[0]:null;
   }
 
-  function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc){
+  function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc,nManual){
     const v=$("v"+key), hint=$("h"+key), cnt=$("c"+key), a=cfg.at;
+    // Con el número escrito a mano no hay nada congelado (las ventas nuevas
+    // siguen contando), así que basta con marcar el lápiz
+    $("edit"+key).classList.toggle("set",!!nManual||!!isManual);
     if(pct==null){
       v.firstChild.textContent="— ";
       cnt.textContent="";
@@ -2120,16 +2130,21 @@
       document.getElementById("dlgOverride").showModal();
       return;
     }
-    const label=key==="care"?"CARE":"SEGUROS";
-    $("ovTitle").textContent="% Attach "+label+" · "+monthName(view.y,view.m);
-    $("ovLabel").textContent="% "+label+" del mes";
-    const auto=key==="care"?c.autoCare:c.autoSeg;
-    const nServ=key==="care"?c.nCare:c.nSeg;
-    $("ovAuto").textContent = auto==null
-      ? "Aún no hay ventas para el cálculo automático."
-      : !isFinite(auto)
-        ? ("Llevas "+nServ+" servicio"+(nServ===1?"":"s")+" y ninguna venta de aparato, así que cuenta como tramo alto.")
-        : ("Cálculo automático actual: "+fmtPct.format(auto)+" % ("+nServ+" de "+c.nAt+" ventas)");
+    // Aquí se escribe cuántos llevas, no el porcentaje: el % lo saca la app
+    // dividiendo entre tus ventas, que es lo que nunca se sabe de memoria
+    const esCare=key==="care";
+    const label=esCare?"CARE":"seguros";
+    const nk=esCare?"nCare":"nSeg";
+    const nActual=esCare?c.nCare:c.nSeg;
+    const nAuto=esCare?c.autoNCare:c.autoNSeg;
+    const puesto=state.overrides[c.mk]&&state.overrides[c.mk][nk]!=null;
+    $("ovInput").value=puesto?String(nActual):"";
+    $("ovTitle").textContent=(esCare?"CARE · ":"Seguros · ")+monthName(view.y,view.m);
+    $("ovLabel").textContent=esCare?"CARE que llevas este mes":"Seguros que llevas este mes";
+    $("ovAuto").textContent="De tus apuntes salen "+fmtNum.format(nAuto)+" "
+      +(nAuto===1?(esCare?"CARE":"seguro"):label)
+      +(c.nAt?" sobre "+c.nAt+" venta"+(c.nAt===1?"":"s")+" = "+fmtPct.format(nAuto/c.nAt*100)+" %":"")
+      +". Escribe cuántos llevas de verdad: a partir de ahí, lo que apuntes se le sigue sumando.";
     document.getElementById("dlgOverride").showModal();
   }
   $("editFact").onclick=()=>openOverride("fact");
@@ -2140,29 +2155,36 @@
     const mk=monthKey(view.y,view.m);
     const pre=computeMonth(view.y,view.m);
     const val=parseDec($("ovInput").value);
-    state.overrides[mk]=state.overrides[mk]||{};
-    if(isNaN(val)){
-      delete state.overrides[mk][ovKey];
-      delete state.overrides[mk][ovKey+"Base"];
-    }
-    else if(ovKey==="fact"||ovKey==="score"){
-      state.overrides[mk][ovKey]=Math.max(0,Math.round(val*100)/100);
+    const o=state.overrides[mk]=state.overrides[mk]||{};
+    const esNum=ovKey==="fact"||ovKey==="score";
+    // Las de attach se guardan como número de CARE / seguros (nCare, nSeg).
+    // care y seg eran el porcentaje de antes; al escribir el número, sobran.
+    const k=esNum?ovKey:(ovKey==="care"?"nCare":"nSeg");
+    if(isNaN(val)){ delete o[k]; delete o[k+"Base"]; if(!esNum) delete o[ovKey]; }
+    else if(esNum){
+      o[k]=Math.max(0,Math.round(val*100)/100);
       // Se guarda cuánto sumaban los apuntes en este momento: lo que venga
       // después se suma encima en vez de quedarse la cifra congelada
-      state.overrides[mk][ovKey+"Base"]=(ovKey==="fact")?pre.autoFact:pre.autoScore;
+      o[k+"Base"]=(ovKey==="fact")?pre.autoFact:pre.autoScore;
     }
-    else state.overrides[mk][ovKey]=Math.max(0,Math.min(100,val));
-    if(!Object.keys(state.overrides[mk]).length) delete state.overrides[mk];
+    else{
+      o[k]=Math.max(0,Math.round(val));
+      o[k+"Base"]=(ovKey==="care")?pre.autoNCare:pre.autoNSeg;
+      delete o[ovKey];
+    }
+    if(!Object.keys(o).length) delete state.overrides[mk];
     save(); document.getElementById("dlgOverride").close(); render();
     const post=computeMonth(view.y,view.m);
-    if(ovKey==="fact"||ovKey==="score"){
-      const puesto=post.ov[ovKey]!=null;
+    if(esNum){
+      const puesto=post.ov[k]!=null;
       toast(puesto?((ovKey==="fact"?"Facturación":"Score")+" puesto a mano ✓"):"Vuelve a sumarse de tus apuntes");
       if(post.tF.nivel>pre.tF.nivel||post.tS.nivel>pre.tS.nivel) confetti();
       return;
     }
+    const etiq=ovKey==="care"?"CARE":"SEGUROS";
     const preM=ovKey==="care"?pre.mCare:pre.mSeg, postM=ovKey==="care"?post.mCare:post.mSeg;
-    if(postM>preM){ confetti(); toast("🎉 ¡Attach "+(ovKey==="care"?"CARE":"SEGUROS")+" sube a × "+fmtMult.format(postM)+"!",null,null,4000); }
+    if(postM>preM){ confetti(); toast("🎉 ¡Attach "+etiq+" sube a × "+fmtMult.format(postM)+"!",null,null,4000); return; }
+    toast(post.ov[k]!=null?(etiq+" puestos a mano ✓"):"Vuelven a contarse de tus apuntes");
   };
 
   /* ===== Compartir resumen ===== */
