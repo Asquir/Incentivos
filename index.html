@@ -1212,11 +1212,22 @@
     if(!v.length) return null;
     const fact=v.reduce((a,x)=>a+x.amount,0), score=v.reduce((a,x)=>a+x.score,0);
     const nAcc=v.filter(x=>x.acc).length, nAt=v.length-nAcc;
-    const nCare=v.filter(x=>x.care).length, nSeg=v.filter(x=>x.seguro).length;
+    let nCare=v.filter(x=>x.care).length, nSeg=v.filter(x=>x.seguro).length;
     const ov=state.overrides[mk]||{};
+    // Si ese mes llevaba cifras a mano hay que repartirlas hasta ese día: medir
+    // este mes corregido contra el anterior en crudo inventaba diferencias.
+    // La parte hecha se saca de los propios apuntes, que son los que marcan el ritmo.
+    let f=fact, s=score;
+    if(ov.fact!=null||ov.score!=null||ov.nCare!=null||ov.nSeg!=null){
+      const mes=computeMonth(y,m), parte=(a,b)=>b>0?a/b:0;
+      if(ov.fact!=null) f=mes.fact*parte(fact,mes.autoFact);
+      if(ov.score!=null) s=mes.score*parte(score,mes.autoScore);
+      if(ov.nCare!=null) nCare=Math.round(mes.nCare*parte(nCare,mes.autoNCare));
+      if(ov.nSeg!=null) nSeg=Math.round(mes.nSeg*parte(nSeg,mes.autoNSeg));
+    }
     const pc=(ov.care!=null)?ov.care:(nAt?nCare/nAt*100:null);
     const ps=(ov.seg!=null)?ov.seg:(nAt?nSeg/nAt*100:null);
-    return computeTotals(fact,score,pc,ps).total;
+    return computeTotals(f,s,pc,ps).total;
   }
 
   // Comparación justa con el mes anterior: mismo día del mes
