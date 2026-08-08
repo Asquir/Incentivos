@@ -146,11 +146,14 @@
   .levs{margin-top:13px;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
   .levs .lh{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
     color:var(--hero-muted);padding:9px 12px 7px}
-  .levs .lev{display:flex;align-items:baseline;gap:8px;padding:7px 12px;font-size:13px;
-    color:var(--hero-ink);border-top:1px solid rgba(255,255,255,.07)}
-  .levs .lev .lx{flex:1;min-width:0}
-  .levs .lev .lx b{color:var(--gold);font-weight:800}
-  .levs .lev .lg{font-weight:800;color:#5FD3A6;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .levs .lev{display:flex;align-items:center;gap:8px;padding:8px 11px;
+    border-top:1px solid rgba(255,255,255,.07)}
+  .levs .lev .lt{flex:none;width:56px;font-size:9.5px;letter-spacing:.06em;font-weight:800;
+    color:var(--hero-muted);text-transform:uppercase}
+  .levs .lev .lx{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--hero-ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .levs .lev .lg{flex:none;font-size:15px;font-weight:800;color:#5FD3A6;white-space:nowrap;
+    font-variant-numeric:tabular-nums}
   .levs .lev:last-child{padding-bottom:10px}
 
   /* ---------- Stat tiles ---------- */
@@ -708,8 +711,8 @@
     <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
 
-    <h4>Lo que tienes más cerca</h4>
-    <p>Bajo el incentivo salen hasta <b>tres movimientos</b> que te suben de tramo, con lo que acabarías ganando en cada uno. Van ordenados por <b>lo cerca que los tienes</b>, no por lo que dan: primero lo que puedes conseguir con menos esfuerzo.</p>
+    <h4>Lo que te falta para subir</h4>
+    <p>Bajo el incentivo salen hasta <b>tres movimientos</b> que te suben de tramo: a la izquierda de qué va y cuánto te falta, a la derecha <b>lo que sumarías</b>. Van ordenados por <b>lo cerca que los tienes</b>, no por lo que dan: primero lo que puedes conseguir con menos esfuerzo.</p>
     <p class="ov-note">Para poder comparar euros con puntos de score y con servicios, mide cada uno en ventas de las tuyas: si tu venta media es de 1.800 €, que te falten 3.600 € cuenta igual que vender dos seguros. El aviso de riesgo va aparte y sale además de la lista.</p>
 
     <h4>Tu media diaria y el ritmo que necesitas</h4>
@@ -1168,9 +1171,10 @@
     // Lo que tienes más a mano para subir: se ven las opciones, no solo la mejor
     const levs=palancas(c);
     $("levs").innerHTML=levs.length
-      ? '<div class="lh">💡 Lo que tienes más cerca</div>'
-        +levs.map(l=>'<div class="lev"><span class="lx">'+l.txt+"</span>"
-          +'<span class="lg">→ '+fmtEUR.format(l.total)+"</span></div>").join("")
+      ? '<div class="lh">💡 Lo que te falta para subir</div>'
+        +levs.map(l=>'<div class="lev"><span class="lt">'+l.tag+"</span>"
+          +'<span class="lx">'+l.txt+"</span>"
+          +'<span class="lg">+'+(l.gain<1?fmtEUR:fmtEUR0).format(l.gain)+"</span></div>").join("")
       : "";
     $("levs").hidden=!levs.length;
 
@@ -1589,14 +1593,14 @@
       const falta=c.tF.hasta+1-c.fact;
       const t=computeTotals(c.tF.hasta+1,c.score,c.pctCare,c.pctSeg);
       opts.push({gain:t.total-c.total,total:t.total,esf:eurVenta?falta/eurVenta:999,
-        txt:"Factura <b>"+fmtEUR0.format(falta)+" más</b>"});
+        tag:"VENTAS",txt:fmtEUR0.format(falta)});
     }
     const LS=nivelesScore(), ns=LS[c.tS.nivel];
     if(ns&&c.tS.hasta!=null){
       const falta=c.tS.hasta+1-c.score;
       const t=computeTotals(c.fact,c.tS.hasta+1,c.pctCare,c.pctSeg);
       opts.push({gain:t.total-c.total,total:t.total,esf:ptsVenta?falta/ptsVenta:999,
-        txt:"Suma <b>"+fmtNum.format(falta)+" de score</b>"});
+        tag:"SCORE",txt:fmtNum.format(falta)+" puntos"});
     }
     [["care",c.pctCare,c.nCare,c.ov.care!=null],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null]].forEach(([k,pct,nOk,manual])=>{
       if(manual||pct==null||!isFinite(pct)) return;
@@ -1606,8 +1610,7 @@
       const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
       const nuevo=(nOk+need)/(c.nAt+need)*100;
       const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevo);
-      const nombre=k==="care"?"CARE":(need===1?"seguro":"seguros");
-      opts.push({gain:t.total-c.total,total:t.total,esf:need,txt:"Vende <b>"+need+" "+nombre+" más</b>"});
+      opts.push({gain:t.total-c.total,total:t.total,esf:need,tag:k==="care"?"CARE":"SEGUROS",txt:need+" más"});
     });
     return opts.filter(o=>o.gain>0.005).sort((x,y)=>x.esf-y.esf||y.gain-x.gain).slice(0,3);
   }
