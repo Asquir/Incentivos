@@ -1768,12 +1768,9 @@
   const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   // Precios que en el Excel están desactualizados. Se corrigen aquí porque el
   // score es correcto y solo falla el importe. Añadir "Nombre exacto": precio.
-  // Precios que en tienda no son los del Excel. Los tres phoneCare van un euro
-  // por encima de lo que trae la hoja.
+  // Precios sueltos que en tienda no son los del Excel (los CARE se arreglan
+  // con la regla del euro de abajo, aquí solo van las excepciones de verdad).
   const PRECIOS={
-    "phoneCare":60.99,
-    "phoneCare Plus":80.99,
-    "phoneCare Pro":96.99,
   };
   // [nombre, precio, score, skus, grupo, clase]  clase: c=CARE, g=seguro
   let CATALOGO=[];
@@ -1785,6 +1782,8 @@
       CAT.a.map(p=>({n:p[0],p:p[1],s:p[2],sku:p[3]||"",g:p[4]||"",c:"",srv:0}))
     );
     CATALOGO.forEach(it=>{
+      // Todos los CARE se cobran un euro por encima de lo que trae el Excel
+      if(it.srv===1&&it.c==="c") it.p=Math.round((it.p+1)*100)/100;
       if(!it.mio&&PRECIOS[it.n]!=null) it.p=PRECIOS[it.n];
       let extra="";
       if(it.n.indexOf("TSM_")===0){
