@@ -86,6 +86,9 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
+- Media diaria de facturación bajo el incentivo, en cualquier mes (también en
+  los cerrados). Con un objetivo puesto, al lado aparece el ritmo que haría
+  falta, así se ve de un vistazo lo que se lleva y lo que falta.
 - Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €". Cuenta
   **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
   libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"

@@ -697,8 +697,8 @@
     <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
 
-    <h4>El ritmo que necesitas</h4>
-    <p>Si te has puesto un objetivo, la línea de abajo del incentivo deja de estimar y te dice <b>cuánto tienes que facturar al día</b> con los días que quedan para llegar. Sin objetivo, sigue mostrando la proyección.</p>
+    <h4>Tu media diaria y el ritmo que necesitas</h4>
+    <p>La línea de abajo del incentivo abre siempre con tu <b>media diaria de facturación</b>, en cualquier mes, también en los ya cerrados. Si te has puesto un objetivo, al lado sale <b>cuánto tendrías que facturar al día</b> con los días que quedan: de un vistazo ves lo que llevas y lo que te falta. Sin objetivo, sale la proyección de cierre.</p>
     <p class="ov-note">Cuenta solo <b>los días que trabajas</b>: en Ajustes se pone cuántos libras a la semana (2 por defecto) y la app descuenta los que no vas a estar. Si libras dos y quedan 14 días de calendario, quedan 10 tuyos, y el ritmo diario sube en consecuencia.</p>
 
     <h4>Las ventas que se te escaparon</h4>
@@ -1154,27 +1154,24 @@
 
     // Proyección a fin de mes (solo mes en curso, con al menos una semana de datos)
     const today=new Date();
+    const dim=new Date(view.y,view.m+1,0).getDate();
+    const day=isCurrent?Math.min(today.getDate(),dim):dim;
+    // Se cuentan los días que trabajas, no los del calendario
+    const hechos=Math.max(1,diasCurrados(day));
+    const totales=Math.max(hechos,diasCurrados(dim));
     let projHtml="";
-    if(isCurrent&&(c.fact>0||c.score>0)){
-      const day=today.getDate();
-      const dim=new Date(view.y,view.m+1,0).getDate();
+    if(c.fact>0){
+      // La media diaria va siempre: es la lectura más directa de cómo va el mes
+      projHtml='<b class="num">'+fmtEUR0.format(c.fact/hechos)+"/día</b>&nbsp;de&nbsp;media";
+      const quedan=totales-hechos;
       // Con menos de una semana los datos dan proyecciones disparatadas
-      if(day>=7&&day<dim){
-        // Se cuentan los días que trabajas, no los del calendario
-        const hechos=Math.max(1,diasCurrados(day));
-        const totales=Math.max(hechos,diasCurrados(dim));
-        const quedan=totales-hechos;
-        const nd=libraSemana()>0?" de trabajo":"";
-        const falta=quedan>0?ritmoObjetivo(c):null;
-        if(falta!=null){
+      if(isCurrent&&day>=7&&quedan>0){
+        const falta=ritmoObjetivo(c);
+        projHtml+= (falta!=null)
           // Con objetivo puesto interesa más el ritmo que hace falta que la proyección
-          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+nd+"</b> · para tu objetivo, <b class=\"num\">~"
-            +fmtEUR0.format(falta/quedan)+"/día</b>";
-        } else {
-          const pr=computeTotals(c.fact/hechos*totales, c.score/hechos*totales, c.pctCare, c.pctSeg);
-          projHtml="Quedan <b>"+quedan+(quedan===1?" día":" días")+nd+"</b> · a este ritmo acabarás con <b class=\"num\">~"
-            +fmtEUR0.format(pr.total)+"</b>";
-        }
+          ? " · para tu objetivo, <b class=\"num\">"+fmtEUR0.format(falta/quedan)+"/día</b>"
+          : " · quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · <b class=\"num\">~"
+            +fmtEUR0.format(computeTotals(c.fact/hechos*totales,c.score/hechos*totales,c.pctCare,c.pctSeg).total)+"</b>&nbsp;al&nbsp;cierre";
       }
     }
     $("proj").innerHTML=projHtml;
