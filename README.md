@@ -82,6 +82,12 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   llevar también su SKU. Si lo que se escribe en el buscador parece una
   referencia, al crear el producto ya va puesta en su sitio. En Ajustes se
   tocan para editarlos.
+- **Varias unidades en un mismo apunte**: dos iPhone, o un iPhone y un iPad, en
+  la misma factura cuentan como **dos unidades centrales** en los porcentajes,
+  sin tener que partirla en dos ventas. Igual con los servicios: dos phoneCare
+  cuentan como dos CARE. Sale a la vista al montar el ticket ("Venta ×2",
+  "✓ CARE ×2") y en la lista de ventas. Las ventas apuntadas antes de esto
+  siguen contando como una.
 - Apunte de **accesorios**: suman a facturación y score, pero quedan fuera del
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.

@@ -353,6 +353,7 @@
   .chip{font-size:10.5px;font-weight:800;border-radius:6px;padding:2.5px 7px;letter-spacing:.04em}
   .chip.score{background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
   .chip.acc{background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid var(--line);color:var(--muted)}
+  .chip.uds{background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid var(--line);color:var(--ink);font-weight:800}
   .chip.care{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
   .chip.seg{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold-ink);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
   .sale .note{font-size:12px;color:var(--muted);flex-basis:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -717,6 +718,10 @@
     <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
 
+    <h4>Varias unidades en la misma venta</h4>
+    <p>No hace falta partir una factura en varios apuntes. Si el cliente se lleva <b>dos iPhone</b>, o un iPhone y un iPad, añade los dos productos al mismo ticket y cuentan como <b>dos unidades centrales</b> para los porcentajes. Lo mismo con los servicios: dos phoneCare en la misma factura cuentan como <b>dos CARE</b>.</p>
+    <p class="ov-note">Se ve mientras lo montas: el título pone "2 unidades centrales", el botón "Venta ×2" y el de CARE "✓ CARE ×2". En la lista, la venta lleva su etiqueta. Los accesorios y las fundas no son unidades centrales: suman importe y score, pero no tocan el divisor.</p>
+
     <h4>Lo que te falta para subir</h4>
     <p>Bajo el incentivo hay una línea que va enseñando, de una en una, lo que te falta para <b>subir de tramo</b> y lo que <b>ganarías de más</b> si lo consigues. Por ejemplo "68 puntos de score · ganas +10 €" quiere decir que, con 68 puntos más, el incentivo del mes te subiría 10 € por encima de lo que tienes ahora. Se turnan solas cada pocos segundos y tocándola pasa a la siguiente.</p>
     <p class="ov-note">Cada una supone que <b>lo demás se queda como está</b>. Y como la fórmula multiplica, hacer dos a la vez da <b>más que sumar lo que da cada una</b>: por eso aparece también la línea del rayo ⚡ con las dos juntas. Ejemplo real: 3 seguros dan +69 € y 68 de score dan +10 €, pero haciendo las dos ganas +86 €, no +79 €.</p>
@@ -1078,6 +1083,11 @@
   }
 
   /* ===== Cálculo del mes ===== */
+  // Cuántas unidades centrales y cuántos servicios lleva una venta
+  const udsDe=v=>(v.uds!=null)?Math.max(0,v.uds):(v.acc?0:1);
+  const carDe=v=>(v.nc!=null)?Math.max(0,v.nc):(v.care?1:0);
+  const segDe=v=>(v.ng!=null)?Math.max(0,v.ng):(v.seguro?1:0);
+
   function computeTotals(fact,score,pctCare,pctSeg){
     const tF=tramoFact(fact), tS=tramoScore(score);
     const parte1=floor2(fact*tF.pct/100);
@@ -1097,9 +1107,12 @@
     // así que no van en el divisor, pero el servicio que lleven sí suma arriba:
     // por eso el porcentaje puede pasar del 100 %.
     const nAcc=ventas.filter(v=>v.acc).length;
-    const autoNAt=n-nAcc;
-    const autoNCare=ventas.filter(v=>v.care).length;
-    const autoNSeg=ventas.filter(v=>v.seguro).length;
+    // Una venta puede llevar varias unidades centrales y varios servicios: dos
+    // iPhone en la misma factura son dos, no una. Las apuntadas antes de esto
+    // no traen los contadores, así que valen 1 como hasta ahora.
+    const autoNAt=ventas.reduce((a,v)=>a+udsDe(v),0);
+    const autoNCare=ventas.reduce((a,v)=>a+carDe(v),0);
+    const autoNSeg=ventas.reduce((a,v)=>a+segDe(v),0);
     const ov=state.overrides[mk]||{};
     // Se puede escribir a mano cuántos CARE y seguros llevas. Como con la
     // facturación, es el punto de partida: lo que apuntes después se le suma.
@@ -1716,9 +1729,9 @@
   // Lo que aporta una venta al incentivo: cuánto bajaría el total si no existiera.
   // Al ser una fórmula de multiplicaciones, una venta sin servicios puede restar.
   function aporta(c,v){
-    const nAt=c.nAt-(v.acc?0:1);
-    const nCare=c.nCare-(v.care?1:0);
-    const nSeg=c.nSeg-(v.seguro?1:0);
+    const nAt=Math.max(0,c.nAt-udsDe(v));
+    const nCare=Math.max(0,c.nCare-carDe(v));
+    const nSeg=Math.max(0,c.nSeg-segDe(v));
     const pc=(c.ov.care!=null)?c.ov.care:(nAt?nCare/nAt*100:null);
     const ps=(c.ov.seg!=null)?c.ov.seg:(nAt?nSeg/nAt*100:null);
     // Aunque estén puestas a mano, cada venta sigue sumándose encima
@@ -1768,8 +1781,9 @@
           +'<div class="meta">'
           +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
           +(v.acc?'<span class="chip acc">LIBRE</span>':"")
-          +(v.care?'<span class="chip care">CARE</span>':"")
-          +(v.seguro?'<span class="chip seg">SEGURO</span>':"")
+          +(udsDe(v)>1?'<span class="chip uds">'+udsDe(v)+" UNIDADES</span>":"")
+          +(carDe(v)?'<span class="chip care">CARE'+(carDe(v)>1?" ×"+carDe(v):"")+"</span>":"")
+          +(segDe(v)?'<span class="chip seg">SEGURO'+(segDe(v)>1?" ×"+segDe(v):"")+"</span>":"")
           +((v.items&&v.items.length)?'<span class="note">'+esc(v.items.map(x=>x.n).join(" + "))+"</span>"
               :(v.note?'<span class="note">'+esc(v.note)+"</span>":""))
           +"</div>"
@@ -1794,17 +1808,22 @@
   /* ===== Formulario ===== */
   let togCare=false, togSeg=false, esAcc=false;
   function refreshTogs(){
+    // Si el ticket lleva dos, se ve el ×2: así se sabe que cuentan los dos
+    const q=cantidades();
+    const veces=n=>n>1?" ×"+n:"";
     $("tCare").className="tog"+(togCare?" on":"");
-    $("tCare").textContent=(togCare?"✓ CARE":"+ CARE");
+    $("tCare").textContent=(togCare?"✓ CARE"+veces(q.nc):"+ CARE");
     $("tSeg").className="tog"+(togSeg?" on":"");
-    $("tSeg").textContent=(togSeg?"✓ SEGURO":"+ SEGURO");
+    $("tSeg").textContent=(togSeg?"✓ SEGURO"+veces(q.ng):"+ SEGURO");
     // También un suelto puede llevar CARE o seguro: el servicio suma al porcentaje
     $("accNote").hidden=!esAcc;
     $("segVenta").className=esAcc?"":"on";
     $("segAcc").className=esAcc?"on":"";
+    $("segVenta").textContent="Venta"+veces(q.uds);
     if(!editingId){
       $("btnSave").textContent=esAcc?"Añadir suelto":"Añadir venta";
-      $("formTitle").textContent=esAcc?"Suelto · no cuenta para %":"Nueva venta";
+      $("formTitle").textContent=esAcc?"Suelto · no cuenta para %"
+        :(q.uds>1?q.uds+" unidades centrales":"Nueva venta");
     }
   }
   let careManual=false, segManual=false;
@@ -2056,6 +2075,20 @@
       +(soloSeg?"":(lineas.some(l=>exentoIva(l.c))?" (el seguro va entero)":""));
   }
 
+  // Cuántas unidades centrales y cuántos servicios lleva el ticket. Sale de las
+  // líneas: dos iPhone son dos unidades y dos phoneCare son dos CARE. Si no hay
+  // líneas manda lo de siempre: una unidad y los botones de CARE y seguro.
+  function cantidades(){
+    const eq=lineas.filter(l=>l.eq).length;
+    const nc=lineas.filter(l=>l.c==="c").length;
+    const ng=lineas.filter(l=>l.c==="g").length;
+    return {
+      uds: esAcc?0:Math.max(1,eq),
+      nc: nc||(togCare?1:0),
+      ng: ng||(togSeg?1:0)
+    };
+  }
+
   // Lo que se registrará: las líneas sin IVA (salvo seguros) más lo tecleado
   function netoTicket(){
     const baseP=Number($("fAmount").dataset.base||0);
@@ -2153,11 +2186,15 @@
     const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c,ac:l.ac||0,eq:l.eq||0}));
     // A facturación va sin IVA; el bruto se guarda para poder volver a editarla
     const neto=netoTicket();
-    const nueva={id:uid(),date,ts:Date.now(),amount:neto,bruto:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim(),items:items};
+    const q=cantidades();
+    const nueva={id:uid(),date,ts:Date.now(),amount:neto,bruto:amt,score:sc,
+      care:togCare,seguro:togSeg,acc:acc,uds:q.uds,nc:q.nc,ng:q.ng,
+      note:$("fNote").value.trim(),items:items};
     if(editingId){
       const pre=computeMonth(d.getFullYear(),d.getMonth());
       const v=state.ventas.find(x=>x.id===editingId);
-      if(v){ v.amount=neto; v.bruto=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc; v.date=date; v.note=$("fNote").value.trim(); v.items=items; }
+      if(v){ v.amount=neto; v.bruto=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc;
+        v.uds=q.uds; v.nc=q.nc; v.ng=q.ng; v.date=date; v.note=$("fNote").value.trim(); v.items=items; }
       lastAddedId=editingId;
       save();
       view={y:d.getFullYear(),m:d.getMonth()};
@@ -2466,6 +2503,9 @@
       bruto:(v.bruto!=null&&!isNaN(Number(v.bruto)))?Number(v.bruto):undefined,
       score:Number(v.score)||0,
       care:!!v.care, seguro:!!v.seguro, acc:!!v.acc,
+      uds:(v.uds!=null&&!isNaN(Number(v.uds)))?Math.max(0,Math.round(v.uds)):undefined,
+      nc:(v.nc!=null&&!isNaN(Number(v.nc)))?Math.max(0,Math.round(v.nc)):undefined,
+      ng:(v.ng!=null&&!isNaN(Number(v.ng)))?Math.max(0,Math.round(v.ng)):undefined,
       note:typeof v.note==="string"?v.note:"",
       demo:!!v.demo,
       items:Array.isArray(v.items)?v.items.filter(x=>x&&typeof x==="object").map(x=>({
