@@ -64,6 +64,13 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 ## Funciones
 
 - Alta de venta en segundos: importe, score y botones CARE / SEGURO.
+- **IVA**: el buscador y el ticket enseñan el precio real (el que paga el
+  cliente) y a facturación va el importe **sin IVA**, que es como lo cuenta la
+  empresa. Debajo del importe se ve siempre lo que se va a registrar. Los
+  seguros (AppleCare, Insurama) están exentos y cuentan enteros. El porcentaje
+  se cambia en Ajustes y con 0 se desactiva. Cada venta guarda también el
+  bruto, así que al editarla vuelve el precio con IVA y no se descuenta dos
+  veces.
 - Buscador con el catálogo de la empresa (2.149 servicios y accesorios con su
   precio y su score): al elegir un producto rellena importe, score y nota.
   Entiende las abreviaturas de tienda (buscar "funda" encuentra "FUN IPH16…")

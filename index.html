@@ -181,6 +181,8 @@
   .frow{display:flex;gap:10px}
   .field{flex:1;min-width:0}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .neto{margin:5px 0 0;font-size:11.5px;color:var(--muted);line-height:1.3}
+  .neto b{color:var(--gold-ink)}
   .field label .opt{font-weight:500;opacity:.75}
   .field input{
     width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);
@@ -592,6 +594,7 @@
       <div class="field">
         <label for="fAmount">Importe (€)</label>
         <input id="fAmount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+        <p class="neto" id="fNeto" hidden></p>
       </div>
       <div class="field">
         <label for="fScore">Score</label>
@@ -690,6 +693,10 @@
     <h4>Lo de siempre</h4>
     <p>Cuando repites dos veces la misma combinación de productos, la app la aprende sola y te la ofrece al abrir el buscador con la etiqueta <b>LO DE SIEMPRE</b>. Un toque y añade todos esos productos de golpe.</p>
 
+    <h4>El IVA</h4>
+    <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
+    <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
+
     <h4>El ritmo que necesitas</h4>
     <p>Si te has puesto un objetivo, la línea de abajo del incentivo deja de estimar y te dice <b>cuánto tienes que facturar al día</b> con los días que quedan para llegar. Sin objetivo, sigue mostrando la proyección.</p>
     <p class="ov-note">Cuenta solo <b>los días que trabajas</b>: en Ajustes se pone cuántos libras a la semana (2 por defecto) y la app descuenta los que no vas a estar. Si libras dos y quedan 14 días de calendario, quedan 10 tuyos, y el ritmo diario sube en consecuencia.</p>
@@ -732,6 +739,10 @@
   <div class="mbody">
     <h3>Ajustes de la fórmula</h3>
     <p class="sub">Si la empresa cambia las tablas, actualízalas aquí y los cálculos se ajustan solos.</p>
+
+    <h4>IVA</h4>
+    <p class="ov-note">A facturación va el precio sin IVA. Los seguros (AppleCare, Insurama) no llevan, así que esos cuentan enteros. Déjalo en 0 si tu tienda lo cuenta con IVA.</p>
+    <div class="ov-field"><label for="cfgIva">IVA que se resta (%)</label><input id="cfgIva" inputmode="decimal"></div>
 
     <h4>Tus días libres</h4>
     <p class="ov-note">Para que el ritmo y la proyección cuenten los días que trabajas de verdad, no los del calendario.</p>
@@ -1360,6 +1371,21 @@
     save(); construirIndice(); pintarMisProductos();
   });
 
+  /* ===== IVA ===== */
+  // En el buscador y en el ticket se ve el precio real, el que paga el cliente.
+  // A facturación va sin IVA, que es como lo cuenta la empresa. Los seguros
+  // (AppleCare, Insurama) no llevan IVA, así que esos van tal cual.
+  function ivaPct(){
+    const v=Number(state.iva);
+    return (v>=0&&v<100)?v:21;
+  }
+  const exentoIva=clase=>clase==="g";
+  function sinIva(precio,clase){
+    const p=Number(precio)||0;
+    if(exentoIva(clase)) return p;
+    return Math.round(p/(1+ivaPct()/100)*100)/100;
+  }
+
   /* ===== Días de trabajo ===== */
   // Las cuentas por día no valen con los días del calendario: si libras dos a la
   // semana, los que quedan de verdad son menos y el ritmo diario es más alto.
@@ -1927,9 +1953,27 @@
     }
     refreshTogs();
     pintarLineas();
+    pintarNeto();
     guardarBorrador();
   }
 
+  // Debajo del importe, lo que va a contar de verdad
+  function pintarNeto(){
+    const el=$("fNeto"), bruto=parseDec($("fAmount").value);
+    const neto=netoTicket();
+    if(isNaN(bruto)||!bruto||!ivaPct()||Math.abs(bruto-neto)<0.005){ el.hidden=true; return; }
+    const soloSeg=lineas.length&&lineas.every(l=>exentoIva(l.c))&&!Number($("fAmount").dataset.base||0);
+    el.hidden=false;
+    el.innerHTML="Se registran <b>"+fmtEUR.format(neto)+"</b> sin IVA"
+      +(soloSeg?"":(lineas.some(l=>exentoIva(l.c))?" (el seguro va entero)":""));
+  }
+
+  // Lo que se registrará: las líneas sin IVA (salvo seguros) más lo tecleado
+  function netoTicket(){
+    const baseP=Number($("fAmount").dataset.base||0);
+    const l=lineas.reduce((a,x)=>a+sinIva(x.p,x.c),0);
+    return Math.round((l+sinIva(baseP,""))*100)/100;
+  }
   function pintarLineas(){
     const box=$("fLineas");
     box.hidden=!lineas.length;
@@ -1947,7 +1991,7 @@
     $("fAmount").dataset.base=Math.max(0,(isNaN(p)?0:p)-sumP);
     $("fScore").dataset.base=Math.max(0,(isNaN(s)?0:s)-sumS);
   }
-  $("fAmount").addEventListener("input",()=>{anotarBase();guardarBorrador();});
+  $("fAmount").addEventListener("input",()=>{anotarBase();pintarNeto();guardarBorrador();});
   $("fScore").addEventListener("input",()=>{anotarBase();guardarBorrador();});
   $("fNote").addEventListener("input",guardarBorrador);
 
@@ -2019,11 +2063,13 @@
     const acc=esAcc;
     const d=new Date(date+"T12:00:00");
     const items=lineas.map(l=>({n:l.n,p:l.p,s:l.s,c:l.c,ac:l.ac||0,eq:l.eq||0}));
-    const nueva={id:uid(),date,ts:Date.now(),amount:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim(),items:items};
+    // A facturación va sin IVA; el bruto se guarda para poder volver a editarla
+    const neto=netoTicket();
+    const nueva={id:uid(),date,ts:Date.now(),amount:neto,bruto:amt,score:sc,care:togCare,seguro:togSeg,acc:acc,note:$("fNote").value.trim(),items:items};
     if(editingId){
       const pre=computeMonth(d.getFullYear(),d.getMonth());
       const v=state.ventas.find(x=>x.id===editingId);
-      if(v){ v.amount=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc; v.date=date; v.note=$("fNote").value.trim(); v.items=items; }
+      if(v){ v.amount=neto; v.bruto=amt; v.score=sc; v.care=togCare; v.seguro=togSeg; v.acc=acc; v.date=date; v.note=$("fNote").value.trim(); v.items=items; }
       lastAddedId=editingId;
       save();
       view={y:d.getFullYear(),m:d.getMonth()};
@@ -2103,15 +2149,18 @@
       const v=state.ventas.find(x=>x.id===ed.dataset.edit);
       if(!v) return;
       editingId=v.id;
-      $("fAmount").value=v.amount?String(v.amount).replace(".",","):"";
+      // Al editar vuelve el precio con IVA, que es el que se escribió: si se
+      // cargara el neto, al guardar de nuevo se le quitaría el IVA dos veces
+      const bruto=(v.bruto!=null)?v.bruto:(v.amount||0);
+      $("fAmount").value=bruto?String(bruto).replace(".",","):"";
       $("fScore").value=v.score?String(v.score):"";
       $("fNote").value=v.note||"";
       if(v.note){ $("notaRow").hidden=false; $("btnNota").hidden=true; }
       $("fDate").value=v.date;
-      lineas=Array.isArray(v.items)?v.items.map(x=>({n:x.n,p:x.p,s:x.s,c:x.c,ac:x.ac||0})):[];
-      $("fAmount").dataset.base=Math.max(0,(v.amount||0)-lineas.reduce((a,l)=>a+l.p,0));
+      lineas=Array.isArray(v.items)?v.items.map(x=>({n:x.n,p:x.p,s:x.s,c:x.c,ac:x.ac||0,eq:x.eq||0})):[];
+      $("fAmount").dataset.base=Math.max(0,bruto-lineas.reduce((a,l)=>a+l.p,0));
       $("fScore").dataset.base=Math.max(0,(v.score||0)-lineas.reduce((a,l)=>a+l.s,0));
-      pintarLineas();
+      pintarLineas(); pintarNeto();
       togCare=!!v.care; togSeg=!!v.seguro; esAcc=!!v.acc;
       careManual=true; segManual=true; tipoManual=true;   // se respeta lo que ya tenía guardado
       refreshTogs(); refreshDateChip();
@@ -2267,6 +2316,7 @@
     $("cfgM3").value=String(cfg.at.m3).replace(".",",");
     $("cfgCol").value=String(cfg.col).replace(".",",");
     $("cfgLibro").value=String(libraSemana());
+    $("cfgIva").value=String(ivaPct()).replace(".",",");
     pintarMisProductos();
     document.getElementById("dlgCfg").showModal();
   }
@@ -2280,6 +2330,7 @@
     nc.at={t1:val("cfgT1",cfg.at.t1),t2:val("cfgT2",cfg.at.t2),m1:val("cfgM1",cfg.at.m1),m2:val("cfgM2",cfg.at.m2),m3:val("cfgM3",cfg.at.m3)};
     nc.col=Math.max(0,val("cfgCol",cfg.col));
     state.libro=Math.max(0,Math.min(6,Math.round(val("cfgLibro",libraSemana()))));
+    state.iva=Math.max(0,Math.min(99,val("cfgIva",ivaPct())));
     // Los topes deben ir de menor a mayor para que los tramos tengan sentido
     const asc=a=>a.every((t,i)=>i===0||t.hasta==null||a[i-1].hasta==null||t.hasta>a[i-1].hasta);
     if(!asc(nc.fact)||!asc(nc.score)){ toast("⚠️ Los topes deben ir de menor a mayor"); return; }
@@ -2324,6 +2375,7 @@
       date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:todayISO(),
       ts:Number(v.ts)||0,
       amount:Number(v.amount)||0,
+      bruto:(v.bruto!=null&&!isNaN(Number(v.bruto)))?Number(v.bruto):undefined,
       score:Number(v.score)||0,
       care:!!v.care, seguro:!!v.seguro, acc:!!v.acc,
       note:typeof v.note==="string"?v.note:"",
@@ -2343,7 +2395,7 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,iva:(d.iva>=0&&d.iva<100)?Number(d.iva):undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
           migrarBases();
           construirIndice();
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
