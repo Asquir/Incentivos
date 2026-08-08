@@ -956,6 +956,9 @@
   const fmtMult=new Intl.NumberFormat("es-ES",{maximumFractionDigits:2});
   // El email trunca cada parte a céntimos (309,375 -> 309,37), así que hacemos lo mismo
   const floor2=x=>Math.floor((x+1e-9)*100)/100;
+  // 7,60 x 0,25 x 0,75 da 1,4249999999999998 en binario, y Math.round se dejaba
+  // el céntimo: 1,42 en vez de 1,43. La épsilon devuelve el valor a su decimal.
+  const round2=x=>Math.round(x*100+(x<0?-1e-6:1e-6))/100;
   function monthKey(y,m){ return y+"-"+String(m+1).padStart(2,"0"); }
   function monthName(y,m){ const s=new Date(y,m,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}); return s.charAt(0).toUpperCase()+s.slice(1); }
   // Acepta "1499,99", "1499.99", "1.500" (miles) y "1.234.567"
@@ -1056,14 +1059,14 @@
     const parte2=floor2(parte1*tS.mult);
     const mCare=multAttach(pctCare), mSeg=multAttach(pctSeg);
     const col=Number(cfg.col)||1;
-    const total=Math.round(parte2*mCare*mSeg*col*100)/100;
+    const total=round2(parte2*mCare*mSeg*col);
     return {tF,tS,parte1,parte2,mCare,mSeg,col,total};
   }
   function computeMonth(y,m){
     const mk=monthKey(y,m);
     const ventas=state.ventas.filter(v=>v.date.startsWith(mk)).sort((a,b)=>b.date.localeCompare(a.date)||b.ts-a.ts);
-    const fact=ventas.reduce((a,v)=>a+v.amount,0);
-    const score=ventas.reduce((a,v)=>a+v.score,0);
+    const fact=round2(ventas.reduce((a,v)=>a+v.amount,0));
+    const score=round2(ventas.reduce((a,v)=>a+v.score,0));
     const n=ventas.length;
     // Attach = servicios vendidos ÷ ventas de aparato. Los sueltos no son ventas,
     // así que no van en el divisor, pero el servicio que lleven sí suma arriba:
@@ -1230,7 +1233,7 @@
     const mk=monthKey(y,m);
     const v=state.ventas.filter(x=>x.date.startsWith(mk)&&(+x.date.slice(8,10))<=dia);
     if(!v.length) return null;
-    const fact=v.reduce((a,x)=>a+x.amount,0), score=v.reduce((a,x)=>a+x.score,0);
+    const fact=round2(v.reduce((a,x)=>a+x.amount,0)), score=round2(v.reduce((a,x)=>a+x.score,0));
     const nAcc=v.filter(x=>x.acc).length, nAt=v.length-nAcc;
     let nCare=v.filter(x=>x.care).length, nSeg=v.filter(x=>x.seguro).length;
     const ov=state.overrides[mk]||{};
@@ -1380,11 +1383,13 @@
     return (v>=0&&v<100)?v:21;
   }
   const exentoIva=clase=>clase==="g";
-  function sinIva(precio,clase){
+  // Sin redondear: el ticket entero se redondea una sola vez, para que sumar
+  // tres líneas no arrastre tres redondeos y salga un céntimo bailando
+  function netoBruto(precio,clase){
     const p=Number(precio)||0;
-    if(exentoIva(clase)) return p;
-    return Math.round(p/(1+ivaPct()/100)*100)/100;
+    return exentoIva(clase)?p:p/(1+ivaPct()/100);
   }
+  const sinIva=(precio,clase)=>round2(netoBruto(precio,clase));
 
   /* ===== Días de trabajo ===== */
   // Las cuentas por día no valen con los días del calendario: si libras dos a la
@@ -1971,8 +1976,8 @@
   // Lo que se registrará: las líneas sin IVA (salvo seguros) más lo tecleado
   function netoTicket(){
     const baseP=Number($("fAmount").dataset.base||0);
-    const l=lineas.reduce((a,x)=>a+sinIva(x.p,x.c),0);
-    return Math.round((l+sinIva(baseP,""))*100)/100;
+    const l=lineas.reduce((a,x)=>a+netoBruto(x.p,x.c),0);
+    return round2(l+netoBruto(baseP,""));
   }
   function pintarLineas(){
     const box=$("fLineas");
