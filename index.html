@@ -248,6 +248,9 @@
   .results button:hover,.results button:focus-visible,.results button:active{background:var(--surface)}
   .results .rn{flex:1;font-size:13px;font-weight:600;line-height:1.3;min-width:0}
   .results .rv{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0}
+  .results .redit{flex-shrink:0;margin:-10px -13px -10px 2px;padding:12px 13px;
+    font-size:13px;color:var(--muted);opacity:.7;align-self:stretch;display:flex;align-items:center}
+  .results .redit:hover,.results .redit:active{opacity:1;color:var(--gold-ink)}
   .results .rp{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
   .results .rs{font-size:12.5px;font-weight:800;color:var(--gold-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
   .results .vacio{padding:14px 13px;font-size:13px;color:var(--muted)}
@@ -717,6 +720,10 @@
     <h4>El IVA</h4>
     <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
+
+    <h4>Cambiar el precio de tus productos</h4>
+    <p>Los precios se mueven. En el buscador, tus productos llevan un <b>✎</b> a la derecha: tocándolo se abre para cambiar precio, score o SKU, y se guarda para siempre. Tocando el resto de la fila se añade a la venta, como siempre. También se llega desde <b>Ajustes → Mis productos</b>.</p>
+    <p class="ov-note">Solo tus productos: los del catálogo de la empresa no se tocan.</p>
 
     <h4>Varias unidades en la misma venta</h4>
     <p>No hace falta partir una factura en varios apuntes. Si el cliente se lleva <b>dos iPhone</b>, o un iPhone y un iPad, añade los dos productos al mismo ticket y cuentan como <b>dos unidades centrales</b> para los porcentajes. Lo mismo con los servicios: dos phoneCare en la misma factura cuentan como <b>dos CARE</b>.</p>
@@ -1219,7 +1226,8 @@
     // Facturación
     const LF=nivelesFact(), nextF=LF[c.tF.nivel];
     $("vFact").firstChild.textContent=fmtEUR0.format(c.fact)+" ";
-    $("cFact").textContent=(c.ov.fact!=null)?"a mano":"";
+    $("cFact").textContent="";
+    $("editFact").classList.toggle("set",c.ov.fact!=null);
     setLvl("lvlFact",fmtMult.format(c.tF.pct)+" %",!nextF?"top":(c.tF.pct>0?"":"low"));
     setSteps("stFact",LF.length,c.tF.nivel,!nextF);
     if(nextF&&c.tF.hasta!=null){
@@ -1231,7 +1239,8 @@
     // Score
     const LS=nivelesScore(), nextS=LS[c.tS.nivel];
     $("vScore").firstChild.textContent=fmtNum.format(c.score)+" ";
-    $("cScore").textContent=(c.ov.score!=null)?"a mano":"";
+    $("cScore").textContent="";
+    $("editScore").classList.toggle("set",c.ov.score!=null);
     setLvl("lvlScore","× "+fmtMult.format(c.tS.mult),!nextS?"top":(c.tS.mult>1?"":"low"));
     setSteps("stScore",LS.length,c.tS.nivel,!nextS);
     if(nextS&&c.tS.hasta!=null){
@@ -1389,7 +1398,11 @@
     npEdit=-1;
     save(); construirIndice();
     document.getElementById("dlgNuevo").close();
-    if(editando){ pintarMisProductos(); toast("Guardado ✓"); }
+    if(editando){
+      pintarMisProductos();
+      if(!$("fResults").hidden) pintarResultados();
+      toast("Guardado ✓");
+    }
     else{ anadirLinea(Object.assign({},nuevo,{mio:1})); toast("Creado ✓ ya sale en el buscador"); }
   };
 
@@ -1987,7 +2000,10 @@
         +(skuVisto(it)?'<span class="rg sku">'+esc(skuVisto(it))+"</span>":"")
         +(it.g?'<span class="rg">'+esc(it.g)+"</span>":"")+"</span>"
         +'<span class="rv"><span class="rp">'+(it.p?fmtEUR.format(it.p):"—")+"</span>"
-        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span></button>").join("");
+        +'<span class="rs">'+fmtMult.format(it.s)+" pts</span></span>"
+        // Los tuyos se pueden retocar sin salir del buscador: los precios cambian
+        +(it.mio?'<span class="redit" data-edp="'+i+'" role="button" aria-label="Editar este producto">✎</span>':"")
+        +"</button>").join("");
     box.hidden=false;
     box._lista=lista;
     box._combo=combo;
@@ -2151,6 +2167,14 @@
       const n=$("fBuscar").value.trim();
       $("fBuscar").value=""; box.hidden=true; $("fBuscar").blur();
       abrirCrear(n);
+      return;
+    }
+    const ed=e.target.closest("[data-edp]");
+    if(ed){
+      e.preventDefault(); e.stopPropagation();
+      const it=box._lista[+ed.dataset.edp];
+      const i=(state.propios||[]).findIndex(x=>x.n===(it&&it.n));
+      if(i>=0) abrirEditarPropio(i);
       return;
     }
     const b=e.target.closest("[data-i]"); if(!b) return;

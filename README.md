@@ -80,8 +80,9 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   referencia el resultado enseña cuál ha encontrado.
 - Los productos propios (móviles, Macs… que no vienen en el Excel) pueden
   llevar también su SKU. Si lo que se escribe en el buscador parece una
-  referencia, al crear el producto ya va puesta en su sitio. En Ajustes se
-  tocan para editarlos.
+  referencia, al crear el producto ya va puesta en su sitio. Se editan con el
+  **✎ de su fila en el buscador** (precio, score o SKU) o desde
+  Ajustes → Mis productos.
 - **Varias unidades en un mismo apunte**: dos iPhone, o un iPhone y un iPad, en
   la misma factura cuentan como **dos unidades centrales** en los porcentajes,
   sin tener que partirla en dos ventas. Igual con los servicios: dos phoneCare
