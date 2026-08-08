@@ -50,8 +50,10 @@ Ejemplo verificado contra el email: 55.000 € → 137,50 € → × 2,25 (346 s
 
 El % de attach se calcula automáticamente como *ventas con CARE (o SEGURO) ÷
 ventas totales del mes*. Si el número no cuadra con el del sistema, el ✎ de
-esas dos fichas pide **cuántos CARE o seguros llevas** — un número, no un
-porcentaje: el % lo saca la app dividiendo entre las ventas. Lo mismo vale
+esas dos fichas pide **cuántos CARE o seguros llevas** y **cuántas unidades
+centrales** — números, no un porcentaje: el % lo calcula la app y lo enseña
+mientras se escribe. Las unidades centrales son el divisor de las dos fichas,
+así que se escriben una vez y valen para CARE y para seguros. Lo mismo vale
 para la facturación y el score: con el ✎ de su ficha se escribe la cifra del
 sistema.
 Esa cifra no se queda congelada, es el **punto de partida**: lo que se apunte

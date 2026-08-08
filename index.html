@@ -661,7 +661,7 @@
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
     <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
     <table id="infoAt"></table>
-    <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si el número no cuadra con el del sistema, pulsa ✎ en la ficha y escribe <b>cuántos CARE o seguros llevas</b>: el porcentaje lo saca ella sola, y lo que apuntes después se le sigue sumando.</p>
+    <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si el número no cuadra con el del sistema, pulsa ✎ en la ficha y escribe <b>cuántos CARE o seguros llevas</b> y <b>cuántas unidades centrales</b>: el porcentaje lo saca ella sola mientras escribes, y lo que apuntes después se le sigue sumando. Las unidades valen para las dos fichas.</p>
     <p class="ov-note">La <b>facturación</b> también lleva su ✎: si la cifra del sistema no coincide con la suma de tus apuntes, escríbela y manda esa. Deja el campo vacío para volver a la suma automática.</p>
 
     <h4>Ventas y sueltos</h4>
@@ -718,6 +718,11 @@
       <label id="ovLabel" for="ovInput">% del mes</label>
       <input id="ovInput" type="text" inputmode="decimal" placeholder="auto">
     </div>
+    <div class="ov-field" id="ovField2" hidden>
+      <label id="ovLabel2" for="ovInput2">Unidades centrales vendidas</label>
+      <input id="ovInput2" type="text" inputmode="numeric" placeholder="auto">
+    </div>
+    <p class="ov-note" id="ovCalc" hidden></p>
     <p class="ov-note" id="ovAuto"></p>
   </div>
   <button class="mclose" id="ovSave">Guardar</button>
@@ -1053,7 +1058,7 @@
     // así que no van en el divisor, pero el servicio que lleven sí suma arriba:
     // por eso el porcentaje puede pasar del 100 %.
     const nAcc=ventas.filter(v=>v.acc).length;
-    const nAt=n-nAcc;
+    const autoNAt=n-nAcc;
     const autoNCare=ventas.filter(v=>v.care).length;
     const autoNSeg=ventas.filter(v=>v.seguro).length;
     const ov=state.overrides[mk]||{};
@@ -1062,6 +1067,9 @@
     const conBase=(v,base,auto)=>Math.max(0,v+(auto-(base!=null?base:auto)));
     const nCare=(ov.nCare!=null)?conBase(ov.nCare,ov.nCareBase,autoNCare):autoNCare;
     const nSeg=(ov.nSeg!=null)?conBase(ov.nSeg,ov.nSegBase,autoNSeg):autoNSeg;
+    // El divisor también: son las unidades centrales del mes, y si no se apuntan
+    // todas no hay entre qué dividir por mucho que los CARE estén bien puestos
+    const nAt=(ov.nAt!=null)?conBase(ov.nAt,ov.nAtBase,autoNAt):autoNAt;
     // Sin ventas de aparato no hay entre qué dividir. Si aun así has vendido
     // servicios, no hay ningún aparato que se haya ido sin ellos: tramo alto.
     const autoCare=nAt?nCare/nAt*100:(nCare>0?Infinity:null);
@@ -1077,7 +1085,7 @@
     const scoreFinal=(ov.score!=null)?Math.max(0,ov.score+(autoScore-(ov.scoreBase!=null?ov.scoreBase:autoScore))):score;
     const t=computeTotals(factFinal,scoreFinal,pctCare,pctSeg);
     return Object.assign({ventas,fact:factFinal,autoFact,score:scoreFinal,autoScore,n,nAcc,nAt,nCare,nSeg,
-      autoNCare,autoNSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
+      autoNAt,autoNCare,autoNSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
   }
 
   /* ===== Render ===== */
@@ -1183,8 +1191,9 @@
     }
 
     // Attach
-    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc,c.ov.nCare!=null);
-    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc,c.ov.nSeg!=null);
+    const ucMano=c.ov.nAt!=null;
+    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc,c.ov.nCare!=null||ucMano);
+    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc,c.ov.nSeg!=null||ucMano);
 
     // Lista
     // En el mes en curso interesa saber qué llevas HOY sin tener que desplegar
@@ -2133,6 +2142,7 @@
         const vis=esFact?c.fact:c.score;
         $("ovInput").value=String(Math.round(vis*100)/100).replace(".",",");
       }
+      $("ovField2").hidden=true; $("ovCalc").hidden=true;
       $("ovTitle").textContent=(esFact?"Facturación · ":"Score · ")+monthName(view.y,view.m);
       $("ovLabel").textContent=esFact?"Facturación del mes (€)":"Score del mes";
       $("ovAuto").textContent="Suma de tus apuntes: "
@@ -2152,12 +2162,29 @@
     $("ovInput").value=puesto?String(nActual):"";
     $("ovTitle").textContent=(esCare?"CARE · ":"Seguros · ")+monthName(view.y,view.m);
     $("ovLabel").textContent=esCare?"CARE que llevas este mes":"Seguros que llevas este mes";
+    // El divisor también se puede escribir: sin él, corregir los CARE no sirve
+    $("ovField2").hidden=false;
+    $("ovInput2").value=(state.overrides[c.mk]&&state.overrides[c.mk].nAt!=null)?String(c.nAt):"";
     $("ovAuto").textContent="De tus apuntes salen "+fmtNum.format(nAuto)+" "
-      +(nAuto===1?(esCare?"CARE":"seguro"):label)
-      +(c.nAt?" sobre "+c.nAt+" venta"+(c.nAt===1?"":"s")+" = "+fmtPct.format(nAuto/c.nAt*100)+" %":"")
-      +". Escribe cuántos llevas de verdad: a partir de ahí, lo que apuntes se le sigue sumando.";
+      +(nAuto===1?(esCare?"CARE":"seguro"):label)+" y "+c.autoNAt+" unidad"+(c.autoNAt===1?"":"es")+" central"+(c.autoNAt===1?"":"es")
+      +". Escribe las cifras de verdad: a partir de ahí, lo que apuntes se le sigue sumando.";
+    pintarOvCalc();
     document.getElementById("dlgOverride").showModal();
   }
+  // El porcentaje resultante, en vivo, mientras escribe los dos números
+  function pintarOvCalc(){
+    if(ovKey!=="care"&&ovKey!=="seg"){ $("ovCalc").hidden=true; return; }
+    const c=computeMonth(view.y,view.m);
+    const nOk=parseDec($("ovInput").value), nUc=parseDec($("ovInput2").value);
+    const s=isNaN(nOk)?(ovKey==="care"?c.nCare:c.nSeg):Math.max(0,Math.round(nOk));
+    const d=isNaN(nUc)?c.nAt:Math.max(0,Math.round(nUc));
+    const el=$("ovCalc");
+    el.hidden=false;
+    el.innerHTML=d?("Te quedaría en <b>"+fmtPct.format(s/d*100)+" %</b> ("+s+" de "+d+")")
+                  :(s?"Sin unidades centrales cuenta como tramo alto":"Sin datos todavía");
+  }
+  $("ovInput").addEventListener("input",pintarOvCalc);
+  $("ovInput2").addEventListener("input",pintarOvCalc);
   $("editFact").onclick=()=>openOverride("fact");
   $("editScore").onclick=()=>openOverride("score");
   $("editCare").onclick=()=>openOverride("care");
@@ -2182,6 +2209,13 @@
       o[k]=Math.max(0,Math.round(val));
       o[k+"Base"]=(ovKey==="care")?pre.autoNCare:pre.autoNSeg;
       delete o[ovKey];
+    }
+    if(!esNum){
+      // Las unidades centrales son el divisor de las dos fichas, así que se
+      // guardan aparte y valen igual para CARE y para seguros
+      const uc=parseDec($("ovInput2").value);
+      if(isNaN(uc)){ delete o.nAt; delete o.nAtBase; }
+      else{ o.nAt=Math.max(0,Math.round(uc)); o.nAtBase=pre.autoNAt; }
     }
     if(!Object.keys(o).length) delete state.overrides[mk];
     save(); document.getElementById("dlgOverride").close(); render();
