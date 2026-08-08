@@ -1771,8 +1771,12 @@
   const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   // Precios que en el Excel están desactualizados. Se corrigen aquí porque el
   // score es correcto y solo falla el importe. Añadir "Nombre exacto": precio.
+  // Precios que en tienda no son los del Excel. Los tres phoneCare van un euro
+  // por encima de lo que trae la hoja.
   const PRECIOS={
+    "phoneCare":60.99,
     "phoneCare Plus":80.99,
+    "phoneCare Pro":96.99,
   };
   // [nombre, precio, score, skus, grupo, clase]  clase: c=CARE, g=seguro
   let CATALOGO=[];
