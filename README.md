@@ -93,7 +93,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
   libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"
   del objetivo descuentan los que no se trabaja.
-- Consejo del mes: calcula qué único movimiento sube más el incentivo.
+- "Lo que tienes más cerca": hasta tres movimientos que suben de tramo
+  (facturación, score, CARE o seguros) con el incentivo que dejarían, y
+  ordenados por esfuerzo, no por lo que dan. Para comparar euros con puntos y
+  con servicios, cada uno se mide en ventas medias propias.
 - Aviso de riesgo: cuando quedan una o ninguna venta de margen antes de
   caer de tramo de attach, avisa y cifra lo que se perdería. Las fichas
   de CARE y seguros muestran siempre el margen disponible

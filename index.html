@@ -142,6 +142,16 @@
   .tip b{color:var(--gold);font-weight:800}
   .tip.warn{background:rgba(224,106,87,.16);border-color:rgba(233,131,107,.4)}
   .tip.warn b{color:#F09980}
+  /* Lo que tienes más a mano para subir, de lo más cerca a lo más lejos */
+  .levs{margin-top:13px;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+  .levs .lh{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    color:var(--hero-muted);padding:9px 12px 7px}
+  .levs .lev{display:flex;align-items:baseline;gap:8px;padding:7px 12px;font-size:13px;
+    color:var(--hero-ink);border-top:1px solid rgba(255,255,255,.07)}
+  .levs .lev .lx{flex:1;min-width:0}
+  .levs .lev .lx b{color:var(--gold);font-weight:800}
+  .levs .lev .lg{font-weight:800;color:#5FD3A6;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .levs .lev:last-child{padding-bottom:10px}
 
   /* ---------- Stat tiles ---------- */
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -543,6 +553,7 @@
       <span class="mbar" id="metaBar" hidden><i id="metaFill"></i></span>
     </button>
     <div class="tip" id="tip" hidden></div>
+    <div class="levs" id="levs" hidden></div>
     <div class="proj" id="proj" hidden></div>
   </section>
 
@@ -696,6 +707,10 @@
     <h4>El IVA</h4>
     <p>En el buscador y en el ticket ves el <b>precio real</b>, el que paga el cliente. A facturación va <b>sin IVA</b>, que es como lo cuenta la empresa, y debajo del importe te dice siempre cuánto se va a registrar.</p>
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
+
+    <h4>Lo que tienes más cerca</h4>
+    <p>Bajo el incentivo salen hasta <b>tres movimientos</b> que te suben de tramo, con lo que acabarías ganando en cada uno. Van ordenados por <b>lo cerca que los tienes</b>, no por lo que dan: primero lo que puedes conseguir con menos esfuerzo.</p>
+    <p class="ov-note">Para poder comparar euros con puntos de score y con servicios, mide cada uno en ventas de las tuyas: si tu venta media es de 1.800 €, que te falten 3.600 € cuenta igual que vender dos seguros. El aviso de riesgo va aparte y sale además de la lista.</p>
 
     <h4>Tu media diaria y el ritmo que necesitas</h4>
     <p>La línea de abajo del incentivo abre siempre con tu <b>media diaria de facturación</b>, en cualquier mes, también en los ya cerrados. Si te has puesto un objetivo, al lado sale <b>cuánto tendrías que facturar al día</b> con los días que quedan: de un vistazo ves lo que llevas y lo que te falta. Sin objetivo, sale la proyección de cierre.</p>
@@ -1136,21 +1151,28 @@
 
     pintarMeta(c);
 
-    // Primero el riesgo de caer de tramo; si no lo hay, el mejor movimiento
-    const risk=riesgo(c), lever=bestLever(c);
-    let tipHtml="", tipWarn=false;
+    // El riesgo de caer de tramo va aparte de la lista de movimientos: son
+    // dos cosas distintas y las dos interesan a la vez
+    const risk=riesgo(c);
+    let tipHtml="";
     if(risk){
-      tipWarn=true;
       tipHtml = risk.m===0
         ? "⚠️ <b>Cuidado:</b> la próxima venta sin "+risk.label+" te baja a <b>× "+fmtMult.format(risk.bajo)+"</b>"
           +(risk.perdida>=0.01?" y pierdes <b>"+fmtEUR.format(risk.perdida)+"</b>":"")
         : "⚠️ <b>Cuidado:</b> solo aguantas <b>1 venta más</b> sin "+risk.label+" antes de bajar a ×&nbsp;"+fmtMult.format(risk.bajo);
-    } else if(lever){
-      tipHtml="💡 <b>"+lever.txt+"</b> y subirías a <b>"+fmtEUR.format(lever.total)+"</b>";
     }
     $("tip").innerHTML=tipHtml;
-    $("tip").className="tip"+(tipWarn?" warn":"");
+    $("tip").className="tip"+(tipHtml?" warn":"");
     $("tip").hidden=!tipHtml;
+
+    // Lo que tienes más a mano para subir: se ven las opciones, no solo la mejor
+    const levs=palancas(c);
+    $("levs").innerHTML=levs.length
+      ? '<div class="lh">💡 Lo que tienes más cerca</div>'
+        +levs.map(l=>'<div class="lev"><span class="lx">'+l.txt+"</span>"
+          +'<span class="lg">→ '+fmtEUR.format(l.total)+"</span></div>").join("")
+      : "";
+    $("levs").hidden=!levs.length;
 
     // Proyección a fin de mes (solo mes en curso, con al menos una semana de datos)
     const today=new Date();
@@ -1555,33 +1577,39 @@
     return out[0]||null;
   }
 
-  // Calcula qué único movimiento sube más el incentivo (y cuánto)
-  function bestLever(c){
-    if(!c.n) return null;
+  // Los cuatro saltos de tramo que tienes a mano, ordenados por lo cerca que
+  // están. El esfuerzo se mide en "ventas de las tuyas" para poder comparar
+  // euros con puntos de score y con servicios en la misma unidad.
+  function palancas(c){
+    if(!c.n) return [];
     const opts=[], a=cfg.at;
+    const eurVenta=c.nAt?c.fact/c.nAt:0, ptsVenta=c.nAt?c.score/c.nAt:0;
     const LF=nivelesFact(), nf=LF[c.tF.nivel];
     if(nf&&c.tF.hasta!=null){
+      const falta=c.tF.hasta+1-c.fact;
       const t=computeTotals(c.tF.hasta+1,c.score,c.pctCare,c.pctSeg);
-      opts.push({gain:t.total-c.total,total:t.total,txt:"Factura "+fmtEUR0.format(c.tF.hasta+1-c.fact)+" más"});
+      opts.push({gain:t.total-c.total,total:t.total,esf:eurVenta?falta/eurVenta:999,
+        txt:"Factura <b>"+fmtEUR0.format(falta)+" más</b>"});
     }
     const LS=nivelesScore(), ns=LS[c.tS.nivel];
     if(ns&&c.tS.hasta!=null){
+      const falta=c.tS.hasta+1-c.score;
       const t=computeTotals(c.fact,c.tS.hasta+1,c.pctCare,c.pctSeg);
-      opts.push({gain:t.total-c.total,total:t.total,txt:"Suma "+fmtNum.format(c.tS.hasta+1-c.score)+" puntos de score"});
+      opts.push({gain:t.total-c.total,total:t.total,esf:ptsVenta?falta/ptsVenta:999,
+        txt:"Suma <b>"+fmtNum.format(falta)+" de score</b>"});
     }
     [["care",c.pctCare,c.nCare,c.ov.care!=null],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null]].forEach(([k,pct,nOk,manual])=>{
-      if(manual||pct==null) return;
+      if(manual||pct==null||!isFinite(pct)) return;
       const targ = pct<a.t1?a.t1 : (pct<a.t2?a.t2:null);
       if(targ==null||targ>=100) return;
       // ventas nuevas con el servicio para llegar al tramo: (nOk+k)/(nAt+k) >= targ/100
       const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
       const nuevo=(nOk+need)/(c.nAt+need)*100;
       const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevo);
-      const nombre=k==="care"?(need===1?"CARE":"CARE"):(need===1?"seguro":"seguros");
-      opts.push({gain:t.total-c.total,total:t.total,txt:"Vende "+need+" "+nombre+" más"});
+      const nombre=k==="care"?"CARE":(need===1?"seguro":"seguros");
+      opts.push({gain:t.total-c.total,total:t.total,esf:need,txt:"Vende <b>"+need+" "+nombre+" más</b>"});
     });
-    opts.sort((x,y)=>y.gain-x.gain);
-    return (opts[0]&&opts[0].gain>0.005)?opts[0]:null;
+    return opts.filter(o=>o.gain>0.005).sort((x,y)=>x.esf-y.esf||y.gain-x.gain).slice(0,3);
   }
 
   function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc,nManual){
