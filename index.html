@@ -1745,7 +1745,7 @@
     editingId=null;
     $("fAmount").value=""; $("fScore").value=""; $("fNote").value="";
     $("fBuscar").value=""; $("fResults").hidden=true;
-    lineas=[]; $("fAmount").dataset.base=0; $("fScore").dataset.base=0; pintarLineas();
+    lineas=[]; $("fAmount").dataset.base=0; $("fScore").dataset.base=0; pintarLineas(); pintarNeto();
     $("notaRow").hidden=true; $("btnNota").hidden=false;
     try{ localStorage.removeItem(DRAFT); }catch(e){}
     $("fDate").value=todayISO();
@@ -1935,7 +1935,7 @@
     if(d.no){ $("fNote").value=d.no; $("notaRow").hidden=false; $("btnNota").hidden=true; }
     togCare=!!d.c; togSeg=!!d.g; esAcc=!!d.a; careManual=!!d.cm; segManual=!!d.gm;
     if(/^\d{4}-\d{2}-\d{2}$/.test(d.f||"")) $("fDate").value=d.f;
-    refreshTogs(); refreshDateChip(); pintarLineas();
+    refreshTogs(); refreshDateChip(); pintarLineas(); pintarNeto();
     restaurando=false;
     return !!(lineas.length||d.im||d.no);
   }
