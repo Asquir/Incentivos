@@ -93,10 +93,13 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
   libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"
   del objetivo descuentan los que no se trabaja.
-- "Lo que te falta para subir": una línea que va turnando hasta tres
-  movimientos que suben de tramo (facturación, score, CARE o seguros) con
-  **lo que sumarías** en cada uno, ordenados por esfuerzo y no por lo que dan.
-  Cambian solos cada pocos segundos y tocándola pasa a la siguiente. Para comparar euros con puntos y
+- Lo que falta para **subir de tramo**: una línea que va turnando los
+  movimientos posibles (facturación, score, CARE o seguros) con lo que
+  **ganarías de más** en cada uno, ordenados por esfuerzo y no por lo que dan.
+  Cambian solos cada pocos segundos y tocándola pasa a la siguiente. Cada uno
+  supone que lo demás no cambia; como la fórmula multiplica, hacer dos a la vez
+  da más que sumar lo de cada uno, así que se añade una línea ⚡ con las dos
+  más cercanas combinadas. Para comparar euros con puntos y
   con servicios, cada uno se mide en ventas medias propias.
 - Aviso de riesgo: cuando quedan una o ninguna venta de margen antes de
   caer de tramo de attach, avisa y cifra lo que se perdería. Las fichas

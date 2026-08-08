@@ -144,16 +144,21 @@
   .tip.warn b{color:#F09980}
   /* Lo que te falta para subir: una sola línea que va rotando sola */
   .lev1{
-    display:flex;align-items:center;gap:9px;width:100%;margin-top:13px;padding:10px 12px;
-    border-radius:12px;text-align:left;cursor:pointer;transition:opacity .18s ease;
+    display:block;width:100%;margin-top:13px;padding:10px 12px;overflow:hidden;
+    border-radius:12px;text-align:left;cursor:pointer;
     background:rgba(232,163,61,.14);border:1px solid rgba(232,163,61,.3);
   }
-  .lev1.fade{opacity:0}
-  .lev1 .le{flex:none;font-size:13px;line-height:1}
-  .lev1 .lt{flex:none;font-size:9.5px;letter-spacing:.06em;font-weight:800;
-    color:var(--hero-muted);text-transform:uppercase}
-  .lev1 .lx{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--hero-ink);
+  .lev1 .lin{display:flex;align-items:baseline;gap:7px;width:100%;animation:levIn .28s ease both}
+  .lev1.out .lin{animation:levOut .2s ease both}
+  @keyframes levIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes levOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-8px)}}
+  @media (prefers-reduced-motion: reduce){ .lev1 .lin,.lev1.out .lin{animation:none} }
+  .lev1 .le{flex:none;font-size:13px}
+  .lev1 .lx{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--hero-ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lev1 .lw{flex:none;font-size:11px;color:var(--hero-muted)}
+  /* En pantallas muy estrechas el "ganas" sobra: el + verde ya lo dice */
+  @media (max-width:340px){ .lev1 .lw{display:none} }
   .lev1 .lg{flex:none;font-size:15px;font-weight:800;color:#5FD3A6;white-space:nowrap;
     font-variant-numeric:tabular-nums}
 
@@ -713,7 +718,8 @@
     <p class="ov-note">Los seguros (AppleCare, Insurama) no llevan IVA, así que esos cuentan enteros. Ejemplo: iPhone de 1.319 € + phoneCare de 59,99 € + AppleCare de 169 € = 1.547,99 € que cobras, y se registran 1.308,66 €. El porcentaje se cambia en Ajustes (0 lo desactiva).</p>
 
     <h4>Lo que te falta para subir</h4>
-    <p>Bajo el incentivo hay una línea que va enseñando, de una en una, hasta <b>tres movimientos</b> que te suben de tramo: de qué va, cuánto te falta y, en verde, <b>lo que sumarías</b>. Se turnan solas cada pocos segundos y, si tienes prisa, tocándola pasa a la siguiente.</p>
+    <p>Bajo el incentivo hay una línea que va enseñando, de una en una, lo que te falta para <b>subir de tramo</b> y lo que <b>ganarías de más</b> si lo consigues. Por ejemplo "68 puntos de score · ganas +10 €" quiere decir que, con 68 puntos más, el incentivo del mes te subiría 10 € por encima de lo que tienes ahora. Se turnan solas cada pocos segundos y tocándola pasa a la siguiente.</p>
+    <p class="ov-note">Cada una supone que <b>lo demás se queda como está</b>. Y como la fórmula multiplica, hacer dos a la vez da <b>más que sumar lo que da cada una</b>: por eso aparece también la línea del rayo ⚡ con las dos juntas. Ejemplo real: 3 seguros dan +69 € y 68 de score dan +10 €, pero haciendo las dos ganas +86 €, no +79 €.</p>
     <p class="ov-note">Para poder comparar euros con puntos de score y con servicios, mide cada uno en ventas de las tuyas: si tu venta media es de 1.800 €, que te falten 3.600 € cuenta igual que vender dos seguros. El aviso de riesgo va aparte y sale además de la lista.</p>
 
     <h4>Tu media diaria y el ritmo que necesitas</h4>
@@ -1587,14 +1593,14 @@
       const falta=c.tF.hasta+1-c.fact;
       const t=computeTotals(c.tF.hasta+1,c.score,c.pctCare,c.pctSeg);
       opts.push({gain:t.total-c.total,total:t.total,esf:eurVenta?falta/eurVenta:999,
-        tag:"VENTAS",txt:fmtEUR0.format(falta)});
+        txt:fmtEUR0.format(falta)+" de ventas",corto:fmtEUR0.format(falta),ap:{fact:c.tF.hasta+1}});
     }
     const LS=nivelesScore(), ns=LS[c.tS.nivel];
     if(ns&&c.tS.hasta!=null){
       const falta=c.tS.hasta+1-c.score;
       const t=computeTotals(c.fact,c.tS.hasta+1,c.pctCare,c.pctSeg);
       opts.push({gain:t.total-c.total,total:t.total,esf:ptsVenta?falta/ptsVenta:999,
-        tag:"SCORE",txt:fmtNum.format(falta)+" puntos"});
+        txt:fmtNum.format(falta)+" puntos de score",corto:fmtNum.format(falta)+" score",ap:{score:c.tS.hasta+1}});
     }
     [["care",c.pctCare,c.nCare,c.ov.care!=null],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null]].forEach(([k,pct,nOk,manual])=>{
       if(manual||pct==null||!isFinite(pct)) return;
@@ -1604,9 +1610,21 @@
       const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
       const nuevo=(nOk+need)/(c.nAt+need)*100;
       const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevo);
-      opts.push({gain:t.total-c.total,total:t.total,esf:need,tag:k==="care"?"CARE":"SEGUROS",txt:need+" más"});
+      const nom=k==="care"?"CARE":(need===1?"seguro":"seguros");
+      opts.push({gain:t.total-c.total,total:t.total,esf:need,
+        txt:need+" "+nom+" más",corto:need+" "+nom,ap:k==="care"?{pc:nuevo}:{ps:nuevo}});
     });
-    return opts.filter(o=>o.gain>0.005).sort((x,y)=>x.esf-y.esf||y.gain-x.gain).slice(0,3);
+    const l=opts.filter(o=>o.gain>0.005).sort((x,y)=>x.esf-y.esf||y.gain-x.gain).slice(0,3);
+    // Los tramos se multiplican entre sí, así que hacer dos da más que sumar lo
+    // que da cada uno. Se enseña para que se vea que compensa combinarlos.
+    if(l.length>1){
+      const a1=l[0].ap, a2=l[1].ap;
+      const t=computeTotals(a2.fact||a1.fact||c.fact, a2.score||a1.score||c.score,
+        a2.pc||a1.pc||c.pctCare, a2.ps||a1.ps||c.pctSeg);
+      if(t.total-c.total>l[0].gain+0.5)
+        l.push({gain:t.total-c.total,total:t.total,txt:l[0].corto+" + "+l[1].corto,juntos:1});
+    }
+    return l;
   }
 
   /* Una sola línea con lo que te falta para subir. Van saliendo por turnos,
@@ -1616,17 +1634,20 @@
     const el=$("levs");
     if(!levLista.length){ el.hidden=true; el.innerHTML=""; return; }
     const l=levLista[levIdx%levLista.length];
-    el.innerHTML='<span class="le">💡</span><span class="lt">'+l.tag+"</span>"
-      +'<span class="lx">'+l.txt+"</span>"
-      +'<span class="lg">+'+(l.gain<1?fmtEUR:fmtEUR0).format(l.gain)+"</span>";
+    el.innerHTML='<span class="lin"><span class="le">'+(l.juntos?"⚡":"💡")+"</span>"
+      +'<span class="lx">'+esc(l.txt)+"</span>"
+      +'<span class="lw">ganas</span>'
+      +'<span class="lg">+'+(l.gain<1?fmtEUR:fmtEUR0).format(l.gain)+"</span></span>";
     el.hidden=false;
   }
   function pasarLev(){
     const el=$("levs");
     const cambia=()=>{ levIdx=(levIdx+1)%levLista.length; pintarLev(); };
     if(reducedMotion()){ cambia(); return; }
-    el.classList.add("fade");
-    setTimeout(()=>{ cambia(); el.classList.remove("fade"); },180);
+    // La de fuera sube y se desvanece; al reemplazar el contenido, la nueva
+    // arranca sola su animación de entrada desde abajo
+    el.classList.add("out");
+    setTimeout(()=>{ cambia(); el.classList.remove("out"); },200);
   }
   function ciclarPalancas(lista){
     // La lista se recalcula en cada render; si es la misma no se reinicia el
