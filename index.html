@@ -288,6 +288,7 @@
     border:1px solid var(--line);border-radius:10px;padding:7px 7px 7px 11px;font-size:12.5px;
   }
   .linea .ln{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .linea .lq{margin-left:6px;font-weight:800;color:var(--gold-ink)}
   .linea .lp{font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
   .linea .lc{font-size:9.5px;font-weight:800;padding:2px 5px;border-radius:5px;letter-spacing:.03em;flex-shrink:0}
   .linea .lc.c{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
@@ -727,7 +728,7 @@
 
     <h4>Varias unidades en la misma venta</h4>
     <p>No hace falta partir una factura en varios apuntes. Si el cliente se lleva <b>dos iPhone</b>, o un iPhone y un iPad, añade los dos productos al mismo ticket y cuentan como <b>dos unidades centrales</b> para los porcentajes. Lo mismo con los servicios: dos phoneCare en la misma factura cuentan como <b>dos CARE</b>.</p>
-    <p class="ov-note">Se ve mientras lo montas: el título pone "2 unidades centrales", el botón "Venta ×2" y el de CARE "✓ CARE ×2". En la lista, la venta lleva su etiqueta. Los accesorios y las fundas no son unidades centrales: suman importe y score, pero no tocan el divisor.</p>
+    <p class="ov-note">Se ve mientras lo montas: lo repetido se junta en una fila con su ×2, el título pone "2 unidades centrales", el botón "Venta ×2" y el de CARE "✓ CARE ×2". La ✕ de una fila agrupada quita uno cada vez. En la lista, la venta lleva su etiqueta. Los accesorios y las fundas no son unidades centrales: suman importe y score, pero no tocan el divisor.</p>
 
     <h4>Lo que te falta para subir</h4>
     <p>Bajo el incentivo hay una línea que va enseñando, de una en una, lo que te falta para <b>subir de tramo</b> y lo que <b>ganarías de más</b> si lo consigues. Por ejemplo "68 puntos de score · ganas +10 €" quiere decir que, con 68 puntos más, el incentivo del mes te subiría 10 € por encima de lo que tienes ahora. Se turnan solas cada pocos segundos y tocándola pasa a la siguiente.</p>
@@ -1187,9 +1188,9 @@
     let tipHtml="";
     if(risk){
       tipHtml = risk.m===0
-        ? "⚠️ <b>Cuidado:</b> la próxima venta sin "+risk.label+" te baja a <b>× "+fmtMult.format(risk.bajo)+"</b>"
+        ? "⚠️ <b>Cuidado:</b> la próxima unidad sin "+risk.label+" te baja a <b>× "+fmtMult.format(risk.bajo)+"</b>"
           +(risk.perdida>=0.01?" y pierdes <b>"+fmtEUR.format(risk.perdida)+"</b>":"")
-        : "⚠️ <b>Cuidado:</b> solo aguantas <b>1 venta más</b> sin "+risk.label+" antes de bajar a ×&nbsp;"+fmtMult.format(risk.bajo);
+        : "⚠️ <b>Cuidado:</b> solo aguantas <b>1 unidad más</b> sin "+risk.label+" antes de bajar a ×&nbsp;"+fmtMult.format(risk.bajo);
     }
     $("tip").innerHTML=tipHtml;
     $("tip").className="tip"+(tipHtml?" warn":"");
@@ -1279,8 +1280,8 @@
     const v=state.ventas.filter(x=>x.date.startsWith(mk)&&(+x.date.slice(8,10))<=dia);
     if(!v.length) return null;
     const fact=round2(v.reduce((a,x)=>a+x.amount,0)), score=round2(v.reduce((a,x)=>a+x.score,0));
-    const nAcc=v.filter(x=>x.acc).length, nAt=v.length-nAcc;
-    let nCare=v.filter(x=>x.care).length, nSeg=v.filter(x=>x.seguro).length;
+    const nAcc=v.filter(x=>x.acc).length, nAt=v.reduce((a,x)=>a+udsDe(x),0);
+    let nCare=v.reduce((a,x)=>a+carDe(x),0), nSeg=v.reduce((a,x)=>a+segDe(x),0);
     const ov=state.overrides[mk]||{};
     // Si ese mes llevaba cifras a mano hay que repartirlas hasta ese día: medir
     // este mes corregido contra el anterior en crudo inventaba diferencias.
@@ -1736,7 +1737,7 @@
     const m=margen(nOk,n,top?a.t2:a.t1);
     if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"; }
     else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc; }
-    else hint.innerHTML="Aguantas <b>"+m+"</b> ventas sin "+svc;
+    else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin "+svc;
   }
 
   // Lo que aporta una venta al incentivo: cuánto bajaría el total si no existiera.
@@ -2114,11 +2115,19 @@
   function pintarLineas(){
     const box=$("fLineas");
     box.hidden=!lineas.length;
-    box.innerHTML=lineas.map((l,i)=>'<div class="linea">'
-      +(l.c?'<span class="lc '+l.c+'">'+(l.c==="c"?"CARE":"SEGURO")+"</span>":"")
-      +'<span class="ln">'+esc(l.n)+"</span>"
-      +'<span class="lp">'+fmtEUR.format(l.p)+" · "+fmtMult.format(l.s)+" pts</span>"
-      +'<button type="button" data-q="'+i+'" aria-label="Quitar">✕</button></div>').join("");
+    // Lo repetido se junta en una fila con ×2: dos iPhone iguales ocupaban dos
+    // filas y el ticket se hacía largo. La ✕ quita uno cada vez.
+    const g=[];
+    lineas.forEach((l,i)=>{
+      const k=l.n+"|"+l.p+"|"+l.s+"|"+l.c;
+      const y=g.find(x=>x.k===k);
+      if(y){ y.n++; y.ult=i; } else g.push({k:k,l:l,n:1,ult:i});
+    });
+    box.innerHTML=g.map(x=>'<div class="linea">'
+      +(x.l.c?'<span class="lc '+x.l.c+'">'+(x.l.c==="c"?"CARE":"SEGURO")+"</span>":"")
+      +'<span class="ln">'+esc(x.l.n)+(x.n>1?'<span class="lq">×'+x.n+"</span>":"")+"</span>"
+      +'<span class="lp">'+fmtEUR.format(x.l.p*x.n)+" · "+fmtMult.format(x.l.s*x.n)+" pts</span>"
+      +'<button type="button" data-q="'+x.ult+'" aria-label="Quitar">✕</button></div>').join("");
   }
 
   // Lo tecleado a mano es la parte que no viene del catálogo
