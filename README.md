@@ -99,7 +99,11 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €". Cuenta
   **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
   libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"
-  del objetivo descuentan los que no se trabaja.
+  del objetivo descuentan los que no se trabaja. Debajo, un campo por mes para
+  **festivos y vacaciones**: se guardan con el mes (los de agosto no son los de
+  septiembre) y se reparten a lo largo de él, así que ajustan la media que se
+  lleva y los días que quedan. Con tope, para que nunca quede un mes sin
+  ningún día de trabajo.
 - Lo que falta para **subir de tramo**: una línea que va turnando los
   movimientos posibles (facturación, score, CARE o seguros) con lo que
   **ganarías de más** en cada uno, ordenados por esfuerzo y no por lo que dan.
