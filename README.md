@@ -93,6 +93,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
+- **Plus por responsabilidad**: un fijo mensual que se pone en Ajustes y se
+  suma al incentivo (no multiplica). Sale en el desglose con un `+` delante.
+  Como se suma igual todos los meses, no altera lo que aporta cada venta ni lo
+  que se ganaría subiendo de tramo, que son diferencias.
 - Media diaria de facturación bajo el incentivo, en cualquier mes (también en
   los cerrados). Con un objetivo puesto, al lado aparece el ritmo que haría
   falta, así se ve de un vistazo lo que se lleva y lo que falta.
