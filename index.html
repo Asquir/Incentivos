@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#EFF2F1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E181E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EFF2F1" media="(prefers-color-scheme: light)" id="tcLight">
+<meta name="theme-color" content="#0E181E" media="(prefers-color-scheme: dark)" id="tcDark">
+<script>
+  /* Antes de pintar nada: si hay un tema elegido, se aplica ya. Si esperásemos
+     al script del final, la app abriría un instante con el tema del sistema. */
+  try{
+    var t=(JSON.parse(localStorage.getItem("incentivos:v1")||"{}")||{}).tema;
+    if(t==="light"||t==="dark") document.documentElement.dataset.theme=t;
+  }catch(e){}
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Incentivos">
@@ -221,6 +229,9 @@
     letter-spacing:.02em;
   }
   .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.13)}
+  /* El de Ajustes ocupa el ancho y reparte los tres a partes iguales */
+  .seg3{width:100%}
+  .seg3 button{flex:1;padding:8px 4px;font-size:12px}
   /* Fecha y nota comparten fila */
   .fmeta{display:flex;align-items:center;gap:10px;margin-top:12px}
   /* Buscador del catálogo */
@@ -781,8 +792,16 @@
 
 <dialog id="dlgCfg">
   <div class="mbody">
-    <h3>Ajustes de la fórmula</h3>
-    <p class="sub">Si la empresa cambia las tablas, actualízalas aquí y los cálculos se ajustan solos.</p>
+    <h3>Ajustes</h3>
+    <p class="sub">Tus preferencias y las tablas de la fórmula, por si la empresa las cambia.</p>
+
+    <h4>Aspecto</h4>
+    <div class="seg seg3" id="cfgTema">
+      <button type="button" data-tema="auto">Automático</button>
+      <button type="button" data-tema="light">Claro</button>
+      <button type="button" data-tema="dark">Oscuro</button>
+    </div>
+    <p class="ov-note">Automático sigue al iPhone: claro de día y oscuro de noche.</p>
 
     <h4>Plus por responsabilidad</h4>
     <p class="ov-note">Lo que cobras al mes por una responsabilidad de la tienda. Se suma al incentivo, no multiplica.</p>
@@ -1446,6 +1465,30 @@
     const b=e.target.closest("[data-mio]"); if(!b) return;
     state.propios.splice(+b.dataset.mio,1);
     save(); construirIndice(); pintarMisProductos();
+  });
+
+  /* ===== Claro u oscuro ===== */
+  function temaElegido(){
+    const t=state.tema;
+    return (t==="light"||t==="dark")?t:"auto";
+  }
+  function aplicarTema(){
+    const t=temaElegido(), el=document.documentElement;
+    if(t==="auto") delete el.dataset.theme; else el.dataset.theme=t;
+    // La barra de estado del iPhone también tiene que seguir al tema elegido
+    const l=document.getElementById("tcLight"), d=document.getElementById("tcDark");
+    if(l&&d){
+      l.media = t==="light"?"all" : t==="dark"?"not all" : "(prefers-color-scheme: light)";
+      d.media = t==="dark"?"all"  : t==="light"?"not all" : "(prefers-color-scheme: dark)";
+    }
+    [].forEach.call(document.querySelectorAll("#cfgTema button"),b=>{
+      b.className=(b.dataset.tema===t)?"on":"";
+    });
+  }
+  document.getElementById("cfgTema").addEventListener("click",e=>{
+    const b=e.target.closest("[data-tema]"); if(!b) return;
+    if(b.dataset.tema==="auto") delete state.tema; else state.tema=b.dataset.tema;
+    save(); aplicarTema();
   });
 
   /* ===== IVA ===== */
@@ -2510,6 +2553,7 @@
     $("cfgLibro").value=String(libraSemana());
     $("cfgIva").value=String(ivaPct()).replace(".",",");
     $("cfgPlus").value=plusMes()?String(plusMes()).replace(".",","):"";
+    aplicarTema();
     $("cfgFueraLbl").textContent="Festivos y vacaciones · "+monthName(view.y,view.m);
     const f=diasFuera(view.y,view.m);
     $("cfgFuera").value=f?String(f):"";
@@ -2600,7 +2644,7 @@
         const ventas=sanitizeVentas(d.ventas);
         if(await ask("Importar copia","Se importarán "+ventas.length+" ventas y reemplazarán los datos actuales de este dispositivo.","Importar")){
           const snap=snapshot();
-          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,iva:(d.iva>=0&&d.iva<100)?Number(d.iva):undefined,plus:(d.plus>0)?Number(d.plus):undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
+          state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,iva:(d.iva>=0&&d.iva<100)?Number(d.iva):undefined,plus:(d.plus>0)?Number(d.plus):undefined,tema:(d.tema==="light"||d.tema==="dark")?d.tema:undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
           migrarBases();
           construirIndice();
           if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
@@ -2664,6 +2708,7 @@
   // Se lee antes de resetForm, que es quien limpia el borrador
   let borrador=null;
   try{ borrador=localStorage.getItem(DRAFT); }catch(e){}
+  aplicarTema();
   const corregidos=migrarSueltos();
   migrarBases();
   resetForm();

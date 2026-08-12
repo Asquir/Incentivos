@@ -129,6 +129,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Funciona sin conexión una vez instalada (service worker), con icono
   propio en la pantalla de inicio.
 - Gráfica de evolución de los últimos 6 meses (tocar una barra abre ese mes).
+- **Modo claro u oscuro** a elección en Ajustes: Automático (sigue al sistema),
+  Claro u Oscuro. Se aplica antes del primer pintado, así que la app no abre
+  un instante con el tema equivocado, y la barra de estado del móvil también
+  lo respeta.
 - Ajustes con las tablas de la fórmula editables, por si la empresa las
   cambia, más el multiplicador colectivo de la Parte 4 (pendiente de
   aplicar por la empresa; se deja en 1 hasta que lo comuniquen).
