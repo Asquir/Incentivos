@@ -1,7 +1,9 @@
 # Mis Incentivos
 
 Aplicación web para apuntar ventas y calcular el incentivo mensual según la
-fórmula de incentivos de la empresa ("Resumen nueva fórmula de incentivos").
+fórmula de incentivos de la empresa: la **fórmula piloto comerciales** (PDF de
+septiembre de 2026) desde octubre de 2026, y la del email "Resumen nueva
+fórmula de incentivos" para los meses anteriores.
 
 Es un único fichero (`index.html`) sin dependencias: funciona abriéndolo en
 cualquier navegador, en el móvil o en el ordenador. Los datos se guardan en el
@@ -9,18 +11,21 @@ propio dispositivo (localStorage), no salen a ningún servidor.
 
 ## Cómo funciona el cálculo
 
-El incentivo se calcula en 3 partes encadenadas:
+El incentivo se calcula en 4 partes encadenadas (la 4ª, pendiente de la
+empresa, vale × 1 de momento):
 
-**Parte 1 · Cuantitativa (ventas)** — la facturación del mes × un porcentaje
-según tramo:
+**Parte 1 · Cuantitativa (facturación)** — la facturación del mes × un
+porcentaje según tramo:
 
 | Nivel | Facturación | % |
 |---|---|---|
-| 1 | 0 – 5.000 € | 0,00 % |
-| 2 | 5.001 – 20.000 € | 0,10 % |
-| 3 | 20.001 – 46.000 € | 0,15 % |
-| 4 | 46.001 – 70.000 € | 0,25 % |
-| 5 | 70.001 € o más | 0,30 % |
+| 1 | 0 – 20.000 € | 0,00 % |
+| 2 | 20.001 – 40.000 € | 0,10 % |
+| 3 | 40.001 – 55.000 € | 0,15 % |
+| 4 | 55.001 – 65.000 € | 0,175 % |
+| 5 | 65.001 – 80.000 € | 0,20 % |
+| 6 | 80.001 – 100.000 € | 0,22 % |
+| 7 | 100.001 € o más | 0,25 % |
 
 **Parte 2 · Cualitativa (score)** — el resultado anterior × un multiplicador
 según el score acumulado:
@@ -28,25 +33,43 @@ según el score acumulado:
 | Nivel | Score | Multiplicador |
 |---|---|---|
 | 1 | 0 – 100 | × 1,00 |
-| 2 | 101 – 250 | × 1,50 |
-| 3 | 251 – 375 | × 2,25 |
-| 4 | 376 – 500 | × 2,50 |
-| 5 | 501 o más | × 3,00 |
+| 2 | 101 – 200 | × 1,50 |
+| 3 | 201 – 350 | × 2,00 |
+| 4 | 351 – 500 | × 2,25 |
+| 5 | 501 – 650 | × 2,50 |
+| 6 | 651 – 800 | × 2,75 |
+| 7 | 801 o más | × 3,00 |
 
 **Parte 3 · Attach CARE y SEGUROS** — dos multiplicadores más, uno por el % de
-attach de CARE y otro por el de SEGUROS:
+attach de CARE y otro por el de SEGUROS. Cada uno tiene sus propios cortes:
 
-| Tramo | Attach | Multiplicador |
-|---|---|---|
-| 1 | menos del 25 % | × 0,25 |
-| 2 | 25 % – 45 % | × 0,75 |
-| 3 | 45 % o más | × 1,35 |
+| Tramo | CARE | Seguros | Multiplicador |
+|---|---|---|---|
+| 1 | menos del 35 % | menos del 30 % | × 0,25 |
+| 2 | 35 % – 40 % | 30 % – 32 % | × 0,75 |
+| 3 | 40 % – 45 % | 32 % – 38 % | × 1 |
+| 4 | 45 % o más | 38 % o más | × 1,25 |
 
-> Nota: el ejemplo del email sitúa el 45 % exacto en el tramo alto
-> (45 % de seguros → × 1,35), así que la app hace lo mismo.
+> Nota: cada tramo empieza en su porcentaje (el 45 % exacto de CARE ya es
+> × 1,25, el 35 % ya no es "<35"), igual que hacía el ejemplo del email.
 
-Ejemplo verificado contra el email: 55.000 € → 137,50 € → × 2,25 (346 score)
-= 309,37 € → × 1,35 × 1,35 = **563,83 €**.
+**Parte 4 · Multiplicadores colectivos** — pendiente de definir por la empresa
+(telefonía, reseñas, servicio técnico). Se puede poner en Ajustes; vale 1.
+
+Cada paso se trunca al céntimo, como en el PDF. Ejemplos verificados contra él:
+
+- 48.000 € → 72 € → × 2 (346 score) = 144 € → × 1,25 × 1,25 = **225,00 €**
+- 71.000 € → 142 € → × 2,5 (510 score) = 355 € → × 1,25 × 1,25 = **554,68 €**
+
+### Cada mes con su fórmula
+
+Los meses anteriores a octubre de 2026 se siguen calculando con la fórmula del
+email (5 tramos, attach 25 % / 45 % → × 0,25 / 0,75 / 1,35), que es la que se
+cobró: el historial, la gráfica y el total del año no se reescriben. Al abrir
+la app por primera vez tras el cambio, lo que cada uno tuviera en Ajustes pasa
+a esos meses tal cual, con sus retoques, y las tablas nuevas entran desde
+octubre. El mes de arranque se cambia en Ajustes → Fórmula piloto. Las copias
+de seguridad de antes se migran igual al importarlas.
 
 El % de attach se calcula automáticamente como *ventas con CARE (o SEGURO) ÷
 ventas totales del mes*. Si el número no cuadra con el del sistema, el ✎ de
@@ -134,8 +157,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   un instante con el tema equivocado, y la barra de estado del móvil también
   lo respeta.
 - Ajustes con las tablas de la fórmula editables, por si la empresa las
-  cambia, más el multiplicador colectivo de la Parte 4 (pendiente de
-  aplicar por la empresa; se deja en 1 hasta que lo comuniquen).
+  cambia (los tramos de attach de CARE y de seguros, cada uno por su lado),
+  el mes desde el que cuentan, y el multiplicador colectivo de la Parte 4
+  (pendiente de aplicar por la empresa; se deja en 1 hasta que lo comuniquen).
+  "Valores del PDF" rellena las tablas originales y no cuenta hasta Guardar.
 
 ## Aviso importante sobre los datos
 
@@ -157,3 +182,13 @@ si hace más de 30 días de la última.
 Abrir la página y usar "Añadir a pantalla de inicio" (Compartir → Añadir a
 pantalla de inicio en iPhone) para tenerla como una app más, con icono
 propio y a pantalla completa.
+
+## Tests
+
+Prueban la app entera en un Chromium real (Playwright): los ejemplos del PDF,
+cada corte de cada tramo, los meses con la fórmula del email, la migración de
+lo guardado y de las copias, y los Ajustes.
+
+```
+node --test
+```

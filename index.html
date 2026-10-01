@@ -688,7 +688,8 @@
 <dialog id="dlgInfo">
   <div class="mbody">
     <h3>Cómo se calcula</h3>
-    <p class="sub">Fórmula de incentivos en 3 partes. El resultado de cada parte alimenta a la siguiente.</p>
+    <p class="sub">Fórmula de incentivos en 4 partes. El resultado de cada parte alimenta a la siguiente.</p>
+    <p class="ov-note" id="infoCual"></p>
 
     <h4>Parte 1 · Cuantitativa (ventas)</h4>
     <p>Tu facturación del mes se multiplica por un porcentaje según el tramo alcanzado:</p>
@@ -699,8 +700,10 @@
     <table id="infoScore"></table>
 
     <h4>Parte 3 · Attach CARE y SEGUROS</h4>
-    <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS:</p>
-    <table id="infoAt"></table>
+    <p>Se aplican dos multiplicadores más, uno por tu % de CARE y otro por tu % de SEGUROS. Cada uno tiene sus tramos:</p>
+    <table id="infoCare"></table>
+    <table id="infoSeg" style="margin-top:10px"></table>
+    <p class="ov-note" style="margin-top:8px">Cada tramo empieza en su porcentaje: con un 45 % justo de CARE ya multiplicas × 1,25, y con un 38 % de seguros también.</p>
     <p class="ov-note" style="margin-top:8px">La app calcula el attach como servicios vendidos ÷ ventas del mes. Si el número no cuadra con el del sistema, pulsa ✎ en la ficha y escribe <b>cuántos CARE o seguros llevas</b> y <b>cuántas unidades centrales</b>: el porcentaje lo saca ella sola mientras escribes, y lo que apuntes después se le sigue sumando. Las unidades valen para las dos fichas.</p>
     <p class="ov-note">La <b>facturación</b> también lleva su ✎: si la cifra del sistema no coincide con la suma de tus apuntes, escríbela y manda esa. Deja el campo vacío para volver a la suma automática.</p>
 
@@ -766,8 +769,13 @@
     <p>Si en la tienda tienes una responsabilidad que paga un fijo al mes, ponlo en <b>Ajustes → Plus por responsabilidad</b> y se suma al incentivo. Aparece como una pieza más del desglose, con un <b>+</b> delante en vez de un ×, porque se suma al final: no multiplica ni depende de los tramos.</p>
     <p class="ov-note">Al sumarse a todos los meses por igual, no cambia lo que aporta cada venta ni lo que ganarías subiendo de tramo: esas cifras son diferencias y el plus se va en la resta.</p>
 
-    <h4>Ejemplo del email</h4>
-    <p class="num">55.000 € × 0,25 % = 137,50 € → × 2,25 (346 score) = 309,37 € → × 1,35 × 1,35 (48 % CARE, 45 % seguros) = <b>563,83 €</b></p>
+    <h4>Parte 4 · Multiplicadores colectivos</h4>
+    <p>Pendiente de definir por la empresa: irá ligada al trabajo de toda la tienda (telefonía, reseñas y servicio técnico). Mientras tanto vale × 1 y no cambia nada. Cuando lo comuniquen, se pone en Ajustes.</p>
+
+    <h4>Ejemplos del PDF</h4>
+    <p class="num">48.000 € × 0,15 % = 72 € → × 2 (346 score) = 144 € → × 1,25 × 1,25 (48 % CARE, 45 % seguros) = <b>225,00 €</b></p>
+    <p class="num">71.000 € × 0,20 % = 142 € → × 2,5 (510 score) = 355 € → × 1,25 × 1,25 = <b>554,68 €</b></p>
+    <p class="ov-note">Cada paso se queda en el céntimo, sin redondear hacia arriba, como en el PDF: 554,6875 € son 554,68 €.</p>
   </div>
   <button class="mclose" onclick="dlgInfo.close()">Entendido</button>
 </dialog>
@@ -817,6 +825,10 @@
     <div class="ov-field" style="margin-top:9px"><label for="cfgFuera" id="cfgFueraLbl">Festivos y vacaciones</label><input id="cfgFuera" inputmode="numeric" placeholder="0"></div>
     <p class="ov-note">Los días de este mes que no vas a trabajar además de tus libres. Se guarda mes a mes.</p>
 
+    <h4>Fórmula piloto</h4>
+    <p class="ov-note">Las tablas de abajo son las del PDF de la fórmula piloto. Los meses anteriores al que pongas aquí se siguen calculando con la fórmula del email, que es la que se cobró. Vacío, se aplica a todos.</p>
+    <div class="ov-field"><label for="cfgDesde">Se aplica desde</label><input id="cfgDesde" type="month" style="width:auto;min-width:150px"></div>
+
     <h4>Tramos de facturación</h4>
     <table class="cfgt">
       <tr><th>Nivel</th><th>Hasta (€)</th><th>%</th></tr>
@@ -829,12 +841,16 @@
       <tbody id="cfgScore"></tbody>
     </table>
 
-    <h4>Attach CARE y SEGUROS</h4>
+    <h4>Attach CARE</h4>
     <table class="cfgt">
       <tr><th>Tramo</th><th>Desde %</th><th>Multiplicador</th></tr>
-      <tr><td>Bajo</td><td class="fixed">0</td><td><input id="cfgM1" inputmode="decimal"></td></tr>
-      <tr><td>Medio</td><td><input id="cfgT1" inputmode="decimal"></td><td><input id="cfgM2" inputmode="decimal"></td></tr>
-      <tr><td>Alto</td><td><input id="cfgT2" inputmode="decimal"></td><td><input id="cfgM3" inputmode="decimal"></td></tr>
+      <tbody id="cfgCare"></tbody>
+    </table>
+
+    <h4>Attach seguros</h4>
+    <table class="cfgt">
+      <tr><th>Tramo</th><th>Desde %</th><th>Multiplicador</th></tr>
+      <tbody id="cfgSeg"></tbody>
     </table>
 
     <div id="cfgMiosBloque" hidden>
@@ -848,7 +864,7 @@
     <div class="ov-field"><label for="cfgCol">Multiplicador de tienda</label><input id="cfgCol" inputmode="decimal"></div>
   </div>
   <div class="askrow">
-    <button class="mclose" id="cfgReset">Valores del email</button>
+    <button class="mclose" id="cfgReset">Valores del PDF</button>
     <button class="mclose yes" id="cfgSave">Guardar</button>
   </div>
 </dialog>
@@ -922,39 +938,110 @@
 (function(){
   "use strict";
 
-  /* ===== Fórmula (según email "Resumen nueva fórmula de incentivos") =====
+  /* ===== Fórmula (según el PDF "Fórmula piloto comerciales") =====
      Los valores son editables desde Ajustes por si la empresa cambia las tablas.
-     pct se guarda en % tal cual aparece en el email (0,25 = 0,25 %). */
+     pct se guarda en % tal cual aparece en el PDF (0,15 = 0,15 %).
+     El attach va por tramos "desde %", cada servicio con los suyos: los cortes
+     de CARE y de seguros ya no son los mismos. */
   const DEF_CFG={
+    fact:[{hasta:20000,pct:0},{hasta:40000,pct:0.10},{hasta:55000,pct:0.15},{hasta:65000,pct:0.175},
+          {hasta:80000,pct:0.20},{hasta:100000,pct:0.22},{hasta:null,pct:0.25}],
+    score:[{hasta:100,mult:1},{hasta:200,mult:1.5},{hasta:350,mult:2},{hasta:500,mult:2.25},
+           {hasta:650,mult:2.5},{hasta:800,mult:2.75},{hasta:null,mult:3}],
+    care:[{desde:0,mult:0.25},{desde:35,mult:0.75},{desde:40,mult:1},{desde:45,mult:1.25}],
+    seg:[{desde:0,mult:0.25},{desde:30,mult:0.75},{desde:32,mult:1},{desde:38,mult:1.25}],
+    col:1,
+    // El PDF trunca también el paso final: 355 × 1,25 × 1,25 = 554,6875 → 554,68
+    fin:"trunc",
+    // Primer mes que se calcula con esta fórmula; los anteriores siguen con la que había
+    desde:"2026-10"
+  };
+  // La del email "Resumen nueva fórmula de incentivos", que rige los meses anteriores
+  const tramos3=(t1,t2,m1,m2,m3)=>[{desde:0,mult:m1},{desde:t1,mult:m2},{desde:t2,mult:m3}];
+  const FORMULA_EMAIL={
     fact:[{hasta:5000,pct:0},{hasta:20000,pct:0.10},{hasta:46000,pct:0.15},{hasta:70000,pct:0.25},{hasta:null,pct:0.30}],
     score:[{hasta:100,mult:1},{hasta:250,mult:1.5},{hasta:375,mult:2.25},{hasta:500,mult:2.5},{hasta:null,mult:3}],
-    at:{t1:25,t2:45,m1:0.25,m2:0.75,m3:1.35},
-    col:1
+    care:tramos3(25,45,0.25,0.75,1.35), seg:tramos3(25,45,0.25,0.75,1.35),
+    col:1, fin:"round", desde:null
   };
   const clone=o=>JSON.parse(JSON.stringify(o));
   let cfg=clone(DEF_CFG);
+  // Fórmulas que ya no rigen, de la más antigua a la más reciente. Cada mes se
+  // calcula con la que estaba en vigor, para no reescribir lo que ya se cobró.
+  let cfgAnt=[clone(FORMULA_EMAIL)];
 
-  const nivelesFact =()=>cfg.fact.map((t,i)=>Object.assign({nivel:i+1},t));
-  const nivelesScore=()=>cfg.score.map((t,i)=>Object.assign({nivel:i+1},t));
-  function tramoFact(f){ const L=nivelesFact(); return L.find(t=>t.hasta==null||f<=t.hasta)||L[L.length-1]; }
-  function tramoScore(s){ const L=nivelesScore(); return L.find(t=>t.hasta==null||s<=t.hasta)||L[L.length-1]; }
-  // El ejemplo del email (45% de seguros → ×1,35) sitúa el 45% exacto en el tramo alto.
-  function multAttach(p){
-    const a=cfg.at;
-    if(p==null||isNaN(p)) return a.m1;
-    return p>=a.t2?a.m3 : p>=a.t1?a.m2 : a.m1;
+  function formulaDe(mk){
+    if(!cfg.desde||mk>=cfg.desde) return cfg;
+    let f=null;
+    cfgAnt.forEach(x=>{ if(!x.desde||mk>=x.desde) f=x; });
+    return f||cfgAnt[0]||cfg;
   }
+  // Lo guardado puede venir de cualquier versión de la app (o de una copia):
+  // se rehace con la forma de ahora y lo que falte o no sea un número sale de def
+  function normFormula(f,def){
+    f=(f&&typeof f==="object")?f:{};
+    const n=(v,fb)=>{ v=Number(v); return isFinite(v)?v:fb; };
+    const ok=a=>Array.isArray(a)&&a.length>0&&a.every(t=>t&&typeof t==="object");
+    const tabla=(a,d,k)=>ok(a)?a.map((t,i)=>({hasta:i===a.length-1?null:n(t.hasta,0),[k]:Math.max(0,n(t[k],0))})):clone(d);
+    const at=(a,d)=>ok(a)?a.map((t,i)=>({desde:i===0?0:n(t.desde,0),mult:Math.max(0,n(t.mult,0))})):clone(d);
+    return {
+      fact:tabla(f.fact,def.fact,"pct"), score:tabla(f.score,def.score,"mult"),
+      care:at(f.care,def.care), seg:at(f.seg,def.seg),
+      col:Math.max(0,n(f.col,def.col)),
+      fin:(f.fin==="trunc"||f.fin==="round")?f.fin:def.fin,
+      desde:(f.desde===null||/^\d{4}-\d{2}$/.test(f.desde||""))?f.desde:def.desde
+    };
+  }
+  // Antes del PDF lo guardado era la fórmula del email, con los retoques que
+  // se le hubieran hecho en Ajustes. Pasa entera a regir los meses anteriores.
+  function deEmail(c){
+    if(!c||typeof c!=="object") return clone(FORMULA_EMAIL);
+    const a=c.at||{}, E=FORMULA_EMAIL.care, v=(x,fb)=>isFinite(Number(x))?Number(x):fb;
+    const t=tramos3(v(a.t1,E[1].desde),v(a.t2,E[2].desde),v(a.m1,E[0].mult),v(a.m2,E[1].mult),v(a.m3,E[2].mult));
+    return normFormula({fact:c.fact,score:c.score,care:t,seg:clone(t),col:c.col,fin:"round",desde:null},FORMULA_EMAIL);
+  }
+  // Deja en d las fórmulas con la forma de ahora. true si ha tenido que cambiarlas.
+  function cargarFormulas(d){
+    if(d.cfg&&Array.isArray(d.cfg.care)){
+      const hay=Array.isArray(d.cfgAnt)&&d.cfgAnt.length>0;
+      cfg=normFormula(d.cfg,DEF_CFG);
+      cfgAnt=(hay?d.cfgAnt:[FORMULA_EMAIL]).map(x=>normFormula(x,FORMULA_EMAIL))
+        .sort((x,y)=>(x.desde||"").localeCompare(y.desde||""));
+      d.cfg=cfg; d.cfgAnt=cfgAnt;
+      return !hay;
+    }
+    cfgAnt=[deEmail(d.cfg)];
+    cfg=clone(DEF_CFG);
+    d.cfg=cfg; d.cfgAnt=cfgAnt;
+    return true;
+  }
+
+  const nivelesFact =F=>(F||cfg).fact.map((t,i)=>Object.assign({nivel:i+1},t));
+  const nivelesScore=F=>(F||cfg).score.map((t,i)=>Object.assign({nivel:i+1},t));
+  function tramoFact(f,F){ const L=nivelesFact(F); return L.find(t=>t.hasta==null||f<=t.hasta)||L[L.length-1]; }
+  function tramoScore(s,F){ const L=nivelesScore(F); return L.find(t=>t.hasta==null||s<=t.hasta)||L[L.length-1]; }
+  // Tramos de attach de un servicio ("care" o "seg") y en cuál cae un %, desde 0.
+  // El "desde" entra en su tramo: el 45 % exacto ya es el de arriba, como en el
+  // ejemplo del email, y el 35 % ya no es "<35". La épsilon evita que 9 de 20
+  // (45,00000000000001 o 44,99999999999999 en binario) caiga del lado que no es.
+  const tramosAt=(k,F)=>(F||cfg)[k];
+  function pasoAttach(k,p,F){
+    if(p==null||isNaN(p)) return 0;
+    let i=0;
+    tramosAt(k,F).forEach((t,j)=>{ if(p+1e-9>=t.desde) i=j; });
+    return i;
+  }
+  function multAttach(k,p,F){ return tramosAt(k,F)[pasoAttach(k,p,F)].mult; }
 
   /* ===== Estado ===== */
   const KEY="incentivos:v1";
   let state = load();
+  // La fórmula del PDF entra en vigor sin tocar los meses de antes
+  if(cargarFormulas(state)&&state.ventas.length) save();
   function load(){
     try{
       const d=JSON.parse(localStorage.getItem(KEY));
-      if(d&&Array.isArray(d.ventas)){
-        if(d.cfg) cfg=Object.assign(clone(DEF_CFG),d.cfg);
-        return d;
-      }
+      if(d&&Array.isArray(d.ventas)) return d;
     }catch(e){}
     return {ventas:[], overrides:{}};
   }
@@ -999,7 +1086,7 @@
   // Copia previa a una acción destructiva, para poder deshacerla
   function snapshot(){ return JSON.parse(JSON.stringify({state:state,cfg:cfg})); }
   function restore(snap){
-    state=snap.state; cfg=snap.cfg;
+    state=snap.state; cfg=state.cfg||snap.cfg; cfgAnt=state.cfgAnt||cfgAnt;
     save(); resetForm(); render();
     toast("Restaurado ✓");
   }
@@ -1023,6 +1110,8 @@
   const fmtNum=new Intl.NumberFormat("es-ES",{useGrouping:"always"});
   const fmtPct=new Intl.NumberFormat("es-ES",{maximumFractionDigits:1});
   const fmtMult=new Intl.NumberFormat("es-ES",{maximumFractionDigits:2});
+  // El % de facturación lleva tres decimales: el 0,175 % no es un 0,18 %
+  const fmtTasa=new Intl.NumberFormat("es-ES",{maximumFractionDigits:3});
   // El email trunca cada parte a céntimos (309,375 -> 309,37), así que hacemos lo mismo
   const floor2=x=>Math.floor((x+1e-9)*100)/100;
   // 7,60 x 0,25 x 0,75 da 1,4249999999999998 en binario, y Math.round se dejaba
@@ -1132,17 +1221,21 @@
     const v=Number(state.plus);
     return (v>0&&isFinite(v))?round2(v):0;
   }
-  function computeTotals(fact,score,pctCare,pctSeg){
-    const tF=tramoFact(fact), tS=tramoScore(score);
+  // F es la fórmula con la que se calcula: la del mes, que no tiene por qué ser la de ahora
+  function computeTotals(fact,score,pctCare,pctSeg,F){
+    F=F||cfg;
+    const tF=tramoFact(fact,F), tS=tramoScore(score,F);
     const parte1=floor2(fact*tF.pct/100);
     const parte2=floor2(parte1*tS.mult);
-    const mCare=multAttach(pctCare), mSeg=multAttach(pctSeg);
-    const col=Number(cfg.col)||1;
+    const mCare=multAttach("care",pctCare,F), mSeg=multAttach("seg",pctSeg,F);
+    const col=Number(F.col)||1;
     // El plus de responsabilidad se suma al final: no multiplica ni depende
-    // de los tramos, se cobra igual
-    const porVentas=round2(parte2*mCare*mSeg*col);
+    // de los tramos, se cobra igual. El paso final se trunca o se redondea
+    // según la fórmula: el PDF trunca (554,68) y el email redondeaba (563,83).
+    const bruto=parte2*mCare*mSeg*col;
+    const porVentas=F.fin==="trunc"?floor2(bruto):round2(bruto);
     const plus=plusMes();
-    return {tF,tS,parte1,parte2,mCare,mSeg,col,porVentas,plus,total:round2(porVentas+plus)};
+    return {F,tF,tS,parte1,parte2,mCare,mSeg,col,porVentas,plus,total:round2(porVentas+plus)};
   }
   function computeMonth(y,m){
     const mk=monthKey(y,m);
@@ -1182,7 +1275,7 @@
     const autoFact=fact, autoScore=score;
     const factFinal=(ov.fact!=null)?Math.max(0,ov.fact+(autoFact-(ov.factBase!=null?ov.factBase:autoFact))):fact;
     const scoreFinal=(ov.score!=null)?Math.max(0,ov.score+(autoScore-(ov.scoreBase!=null?ov.scoreBase:autoScore))):score;
-    const t=computeTotals(factFinal,scoreFinal,pctCare,pctSeg);
+    const t=computeTotals(factFinal,scoreFinal,pctCare,pctSeg,formulaDe(mk));
     return Object.assign({ventas,fact:factFinal,autoFact,score:scoreFinal,autoScore,n,nAcc,nAt,nCare,nSeg,
       autoNAt,autoNCare,autoNSeg,autoCare,autoSeg,pctCare,pctSeg,ov,mk},t);
   }
@@ -1211,11 +1304,11 @@
     // Hero
     setTotal(c.total);
     // Cadena del cálculo en una línea: 137,50 € × 2,25 × 1,35 × 1,35
-    const a=cfg.at, cls=m=>m<=a.m1?"lo":(m>=a.m3?"hi":"");
+    const cls=(k,m)=>{ const T=tramosAt(k,c.F); return m<=T[0].mult?"lo":(m>=T[T.length-1].mult?"hi":""); };
     let chain=cell(fmtEUR.format(c.parte1),"ventas","");
     chain+=cell("× "+fmtMult.format(c.tS.mult),"score",c.tS.mult>1?"hi":"");
-    chain+=cell("× "+fmtMult.format(c.mCare),"care",cls(c.mCare));
-    chain+=cell("× "+fmtMult.format(c.mSeg),"seguros",cls(c.mSeg));
+    chain+=cell("× "+fmtMult.format(c.mCare),"care",cls("care",c.mCare));
+    chain+=cell("× "+fmtMult.format(c.mSeg),"seguros",cls("seg",c.mSeg));
     if(c.col!==1) chain+=cell("× "+fmtMult.format(c.col),"tienda","");
     if(c.plus>0) chain+=cell(fmtEUR0.format(c.plus),"plus","hi","+");
     $("chain").innerHTML=chain;
@@ -1261,27 +1354,27 @@
           // Con objetivo puesto interesa más el ritmo que hace falta que la proyección
           ? " · para tu objetivo, <b class=\"num\">"+fmtEUR0.format(falta/quedan)+"/día</b>"
           : " · quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · <b class=\"num\">~"
-            +fmtEUR0.format(computeTotals(c.fact/hechos*totales,c.score/hechos*totales,c.pctCare,c.pctSeg).total)+"</b>&nbsp;al&nbsp;cierre";
+            +fmtEUR0.format(computeTotals(c.fact/hechos*totales,c.score/hechos*totales,c.pctCare,c.pctSeg,c.F).total)+"</b>&nbsp;al&nbsp;cierre";
       }
     }
     $("proj").innerHTML=projHtml;
     $("proj").hidden=!projHtml;
 
     // Facturación
-    const LF=nivelesFact(), nextF=LF[c.tF.nivel];
+    const LF=nivelesFact(c.F), nextF=LF[c.tF.nivel];
     $("vFact").firstChild.textContent=fmtEUR0.format(c.fact)+" ";
     $("cFact").textContent="";
     $("editFact").classList.toggle("set",c.ov.fact!=null);
-    setLvl("lvlFact",fmtMult.format(c.tF.pct)+" %",!nextF?"top":(c.tF.pct>0?"":"low"));
+    setLvl("lvlFact",fmtTasa.format(c.tF.pct)+" %",!nextF?"top":(c.tF.pct>0?"":"low"));
     setSteps("stFact",LF.length,c.tF.nivel,!nextF);
     if(nextF&&c.tF.hasta!=null){
-      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtMult.format(nextF.pct)+" %";
+      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtTasa.format(nextF.pct)+" %";
     } else {
       $("hFact").textContent="¡Estás en el tramo más alto!";
     }
 
     // Score
-    const LS=nivelesScore(), nextS=LS[c.tS.nivel];
+    const LS=nivelesScore(c.F), nextS=LS[c.tS.nivel];
     $("vScore").firstChild.textContent=fmtNum.format(c.score)+" ";
     $("cScore").textContent="";
     $("editScore").classList.toggle("set",c.ov.score!=null);
@@ -1295,8 +1388,8 @@
 
     // Attach
     const ucMano=c.ov.nAt!=null;
-    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc,c.ov.nCare!=null||ucMano);
-    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc,c.ov.nSeg!=null||ucMano);
+    renderAttach("Care",c.pctCare,c.autoCare,c.ov.care!=null,c.nCare,c.nAt,c.mCare,c.nAcc,c.ov.nCare!=null||ucMano,c.F);
+    renderAttach("Seg",c.pctSeg,c.autoSeg,c.ov.seg!=null,c.nSeg,c.nAt,c.mSeg,c.nAcc,c.ov.nSeg!=null||ucMano,c.F);
 
     // Lista
     // En el mes en curso interesa saber qué llevas HOY sin tener que desplegar
@@ -1339,7 +1432,7 @@
     }
     const pc=(ov.care!=null)?ov.care:(nAt?nCare/nAt*100:null);
     const ps=(ov.seg!=null)?ov.seg:(nAt?nSeg/nAt*100:null);
-    return computeTotals(f,s,pc,ps).total;
+    return computeTotals(f,s,pc,ps,formulaDe(mk)).total;
   }
 
   // Comparación justa con el mes anterior: mismo día del mes
@@ -1536,11 +1629,11 @@
   function ritmoObjetivo(c){
     const meta=Number(state.objetivo)||0;
     if(!meta||!c.fact||c.total>=meta) return null;
-    if(computeTotals(c.fact*10,c.score*10,c.pctCare,c.pctSeg).total<meta) return null;
+    if(computeTotals(c.fact*10,c.score*10,c.pctCare,c.pctSeg,c.F).total<meta) return null;
     let lo=1,hi=10;
     for(let i=0;i<36;i++){
       const k=(lo+hi)/2;
-      if(computeTotals(c.fact*k,c.score*k,c.pctCare,c.pctSeg).total>=meta) hi=k; else lo=k;
+      if(computeTotals(c.fact*k,c.score*k,c.pctCare,c.pctSeg,c.F).total>=meta) hi=k; else lo=k;
     }
     return Math.max(0,c.fact*hi-c.fact);
   }
@@ -1669,16 +1762,16 @@
 
   // Riesgo de caer de tramo con las próximas ventas
   function riesgo(c){
-    const a=cfg.at, out=[];
+    const out=[];
     [["care",c.pctCare,c.nCare,c.ov.care!=null,"CARE"],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null,"seguro"]].forEach(([k,pct,nOk,manual,label])=>{
       if(manual||pct==null||!c.nAt) return;
-      const umbral = pct>=a.t2?a.t2 : (pct>=a.t1?a.t1 : null);
-      if(umbral==null) return;
-      const bajo = pct>=a.t2?a.m2:a.m1;
+      const T=tramosAt(k,c.F), paso=pasoAttach(k,pct,c.F);
+      if(!paso) return;
+      const umbral=T[paso].desde, bajo=T[paso-1].mult;
       const m=margen(nOk,c.nAt,umbral);
       if(m>1) return;
       const nuevoPct=nOk/(c.nAt+m+1)*100;
-      const t=k==="care"?computeTotals(c.fact,c.score,nuevoPct,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevoPct);
+      const t=k==="care"?computeTotals(c.fact,c.score,nuevoPct,c.pctSeg,c.F):computeTotals(c.fact,c.score,c.pctCare,nuevoPct,c.F);
       out.push({m,label,perdida:c.total-t.total,bajo});
     });
     out.sort((x,y)=>x.m-y.m||y.perdida-x.perdida);
@@ -1690,30 +1783,31 @@
   // euros con puntos de score y con servicios en la misma unidad.
   function palancas(c){
     if(!c.n) return [];
-    const opts=[], a=cfg.at;
+    const opts=[];
     const eurVenta=c.nAt?c.fact/c.nAt:0, ptsVenta=c.nAt?c.score/c.nAt:0;
-    const LF=nivelesFact(), nf=LF[c.tF.nivel];
+    const LF=nivelesFact(c.F), nf=LF[c.tF.nivel];
     if(nf&&c.tF.hasta!=null){
       const falta=c.tF.hasta+1-c.fact;
-      const t=computeTotals(c.tF.hasta+1,c.score,c.pctCare,c.pctSeg);
+      const t=computeTotals(c.tF.hasta+1,c.score,c.pctCare,c.pctSeg,c.F);
       opts.push({gain:t.total-c.total,total:t.total,esf:eurVenta?falta/eurVenta:999,
         txt:fmtEUR0.format(falta)+" de ventas",corto:fmtEUR0.format(falta),ap:{fact:c.tF.hasta+1}});
     }
-    const LS=nivelesScore(), ns=LS[c.tS.nivel];
+    const LS=nivelesScore(c.F), ns=LS[c.tS.nivel];
     if(ns&&c.tS.hasta!=null){
       const falta=c.tS.hasta+1-c.score;
-      const t=computeTotals(c.fact,c.tS.hasta+1,c.pctCare,c.pctSeg);
+      const t=computeTotals(c.fact,c.tS.hasta+1,c.pctCare,c.pctSeg,c.F);
       opts.push({gain:t.total-c.total,total:t.total,esf:ptsVenta?falta/ptsVenta:999,
         txt:fmtNum.format(falta)+" puntos de score",corto:fmtNum.format(falta)+" score",ap:{score:c.tS.hasta+1}});
     }
     [["care",c.pctCare,c.nCare,c.ov.care!=null],["seg",c.pctSeg,c.nSeg,c.ov.seg!=null]].forEach(([k,pct,nOk,manual])=>{
       if(manual||pct==null||!isFinite(pct)) return;
-      const targ = pct<a.t1?a.t1 : (pct<a.t2?a.t2:null);
+      const T=tramosAt(k,c.F), sig=T[pasoAttach(k,pct,c.F)+1];
+      const targ=sig?sig.desde:null;
       if(targ==null||targ>=100) return;
       // ventas nuevas con el servicio para llegar al tramo: (nOk+k)/(nAt+k) >= targ/100
       const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
       const nuevo=(nOk+need)/(c.nAt+need)*100;
-      const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg):computeTotals(c.fact,c.score,c.pctCare,nuevo);
+      const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg,c.F):computeTotals(c.fact,c.score,c.pctCare,nuevo,c.F);
       const nom=k==="care"?"CARE":(need===1?"seguro":"seguros");
       opts.push({gain:t.total-c.total,total:t.total,esf:need,
         txt:need+" "+nom+" más",corto:need+" "+nom,ap:k==="care"?{pc:nuevo}:{ps:nuevo}});
@@ -1724,7 +1818,7 @@
     if(l.length>1){
       const a1=l[0].ap, a2=l[1].ap;
       const t=computeTotals(a2.fact||a1.fact||c.fact, a2.score||a1.score||c.score,
-        a2.pc||a1.pc||c.pctCare, a2.ps||a1.ps||c.pctSeg);
+        a2.pc||a1.pc||c.pctCare, a2.ps||a1.ps||c.pctSeg, c.F);
       if(t.total-c.total>l[0].gain+0.5)
         l.push({gain:t.total-c.total,total:t.total,txt:l[0].corto+" + "+l[1].corto,juntos:1});
     }
@@ -1771,16 +1865,17 @@
     levTimer=setInterval(pasarLev,4500);
   };
 
-  function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc,nManual){
-    const v=$("v"+key), hint=$("h"+key), cnt=$("c"+key), a=cfg.at;
+  function renderAttach(key,pct,auto,isManual,nOk,n,mult,nAcc,nManual,F){
+    const v=$("v"+key), hint=$("h"+key), cnt=$("c"+key);
+    const T=tramosAt(key==="Care"?"care":"seg",F), N=T.length, alto=T[N-1];
     // Con el número escrito a mano no hay nada congelado (las ventas nuevas
     // siguen contando), así que basta con marcar el lápiz
     $("edit"+key).classList.toggle("set",!!nManual||!!isManual);
     if(pct==null){
       v.firstChild.textContent="— ";
       cnt.textContent="";
-      setLvl("lvl"+key,"× "+fmtMult.format(a.m1),"low");
-      setSteps("st"+key,3,0,false);
+      setLvl("lvl"+key,"× "+fmtMult.format(T[0].mult),"low");
+      setSteps("st"+key,N,0,false);
       hint.textContent=nAcc?"Solo sueltos este mes":"Sin ventas todavía";
       return;
     }
@@ -1789,29 +1884,29 @@
       const svc=key==="Care"?"CARE":(nOk===1?"seguro":"seguros");
       v.firstChild.textContent=fmtNum.format(nOk)+" ";
       cnt.textContent=svc+" suelto"+(nOk===1?"":"s");
-      setLvl("lvl"+key,"× "+fmtMult.format(a.m3),"top");
-      setSteps("st"+key,3,3,true);
+      setLvl("lvl"+key,"× "+fmtMult.format(alto.mult),"top");
+      setSteps("st"+key,N,N,true);
       hint.textContent="Aún sin ventas de aparato";
       return;
     }
     v.firstChild.textContent=fmtPct.format(pct)+" % ";
     cnt.textContent=isManual?"a mano":"("+nOk+"/"+n+")";
-    const paso=pct>=a.t2?3:(pct>=a.t1?2:1), top=paso===3;
-    setLvl("lvl"+key,"× "+fmtMult.format(mult),top?"top":(paso===2?"":"low"));
-    setSteps("st"+key,3,paso,top);
+    const paso=pasoAttach(key==="Care"?"care":"seg",pct,F), top=paso===N-1, sig=T[paso+1];
+    setLvl("lvl"+key,"× "+fmtMult.format(mult),top?"top":(paso===0?"low":""));
+    setSteps("st"+key,N,paso+1,top);
     hint.className="hint";
-    if(paso===1){
-      hint.innerHTML="A <b>"+fmtPct.format(a.t1-pct)+" pts</b> del × "+fmtMult.format(a.m2);
+    if(paso===0&&sig){
+      hint.innerHTML="A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
       return;
     }
     if(isManual){
-      hint.innerHTML=top?"¡Tramo alto! Multiplicas <b>× "+fmtMult.format(a.m3)+"</b>"
-                        :"A <b>"+fmtPct.format(a.t2-pct)+" pts</b> del × "+fmtMult.format(a.m3);
+      hint.innerHTML=top?"¡Tramo alto! Multiplicas <b>× "+fmtMult.format(alto.mult)+"</b>"
+                        :"A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
       return;
     }
     // El badge ya dice el multiplicador, así que aquí avisamos del margen que queda
     const svc=key==="Care"?"CARE":"seguro";
-    const m=margen(nOk,n,top?a.t2:a.t1);
+    const m=margen(nOk,n,T[paso].desde);
     if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"; }
     else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc; }
     else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin "+svc;
@@ -1828,7 +1923,7 @@
     // Aunque estén puestas a mano, cada venta sigue sumándose encima
     const f=Math.max(0,c.fact-v.amount);
     const s=Math.max(0,c.score-v.score);
-    const sin=computeTotals(f, s, pc, ps).total;
+    const sin=computeTotals(f, s, pc, ps, c.F).total;
     return Math.round((c.total-sin)*100)/100;
   }
 
@@ -2343,10 +2438,10 @@
                       +(post.mSeg!==post.mCare?" y × "+fmtMult.format(post.mSeg):"") :
       dCare ? "⚠️ El attach de CARE baja a × "+fmtMult.format(post.mCare) :
       dSeg ? "⚠️ El attach de seguros baja a × "+fmtMult.format(post.mSeg) :
-      post.tF.nivel<pre.tF.nivel ? "⚠️ Bajas al "+fmtMult.format(post.tF.pct)+" % de facturación" :
+      post.tF.nivel<pre.tF.nivel ? "⚠️ Bajas al "+fmtTasa.format(post.tF.pct)+" % de facturación" :
       post.tS.nivel<pre.tS.nivel ? "⚠️ Bajas a × "+fmtMult.format(post.tS.mult)+" de score" : null;
     const up=
-      post.tF.nivel>pre.tF.nivel ? "🎉 ¡Nivel "+post.tF.nivel+" de facturación! Ahora al "+fmtMult.format(post.tF.pct)+" %" :
+      post.tF.nivel>pre.tF.nivel ? "🎉 ¡Nivel "+post.tF.nivel+" de facturación! Ahora al "+fmtTasa.format(post.tF.pct)+" %" :
       post.tS.nivel>pre.tS.nivel ? "🎉 ¡Nivel "+post.tS.nivel+" de score! Multiplicas × "+fmtMult.format(post.tS.mult) :
       post.mCare>pre.mCare ? "🎉 ¡Attach CARE sube a × "+fmtMult.format(post.mCare)+"!" :
       post.mSeg>pre.mSeg ? "🎉 ¡Attach SEGUROS sube a × "+fmtMult.format(post.mSeg)+"!" : null;
@@ -2535,21 +2630,29 @@
 
   /* ===== Ajustes de la fórmula ===== */
   const numIn=(id,val)=>'<input id="'+id+'" inputmode="decimal" value="'+String(val).replace(".",",")+'">';
-  function openCfg(){
-    $("cfgFact").innerHTML=cfg.fact.map((t,i)=>
+  // Lo que hay en el formulario: la fórmula guardada, o los valores del PDF tras
+  // pulsar el botón. No cuenta hasta Guardar; cerrando sin guardar no cambia nada.
+  let cfgForm=cfg;
+  function setCfg(nc){ cfg=nc; state.cfg=cfg; state.cfgAnt=cfgAnt; save(); }
+  function openCfg(F){
+    cfgForm=(F&&F.fact)?F:cfg;
+    const fo=cfgForm;
+    $("cfgFact").innerHTML=fo.fact.map((t,i)=>
       "<tr><td>Nivel "+(i+1)+"</td><td>"
       +(t.hasta==null?'<span class="open">abierto</span>':numIn("cfF"+i,t.hasta))
       +"</td><td>"+numIn("cfP"+i,t.pct)+"</td></tr>").join("");
-    $("cfgScore").innerHTML=cfg.score.map((t,i)=>
+    $("cfgScore").innerHTML=fo.score.map((t,i)=>
       "<tr><td>Nivel "+(i+1)+"</td><td>"
       +(t.hasta==null?'<span class="open">abierto</span>':numIn("cfS"+i,t.hasta))
       +"</td><td>"+numIn("cfM"+i,t.mult)+"</td></tr>").join("");
-    $("cfgT1").value=String(cfg.at.t1).replace(".",",");
-    $("cfgT2").value=String(cfg.at.t2).replace(".",",");
-    $("cfgM1").value=String(cfg.at.m1).replace(".",",");
-    $("cfgM2").value=String(cfg.at.m2).replace(".",",");
-    $("cfgM3").value=String(cfg.at.m3).replace(".",",");
-    $("cfgCol").value=String(cfg.col).replace(".",",");
+    const filasAt=(k,p)=>fo[k].map((t,i)=>
+      "<tr><td>"+(i+1)+"</td>"
+      +(i===0?'<td class="fixed">0</td>':"<td>"+numIn("cf"+p+"D"+i,t.desde)+"</td>")
+      +"<td>"+numIn("cf"+p+"M"+i,t.mult)+"</td></tr>").join("");
+    $("cfgCare").innerHTML=filasAt("care","C");
+    $("cfgSeg").innerHTML=filasAt("seg","G");
+    $("cfgDesde").value=fo.desde||"";
+    $("cfgCol").value=String(fo.col).replace(".",",");
     $("cfgLibro").value=String(libraSemana());
     $("cfgIva").value=String(ivaPct()).replace(".",",");
     $("cfgPlus").value=plusMes()?String(plusMes()).replace(".",","):"";
@@ -2558,17 +2661,21 @@
     const f=diasFuera(view.y,view.m);
     $("cfgFuera").value=f?String(f):"";
     pintarMisProductos();
-    document.getElementById("dlgCfg").showModal();
+    const dlg=document.getElementById("dlgCfg");
+    if(!dlg.open) dlg.showModal();
   }
-  $("btnCfg").onclick=openCfg;
-  $("cfgReset").onclick=()=>{ cfg=clone(DEF_CFG); openCfg(); toast("Valores del email restaurados"); };
+  $("btnCfg").onclick=()=>openCfg();
+  $("cfgReset").onclick=()=>{ openCfg(clone(DEF_CFG)); toast("Valores del PDF puestos: falta Guardar"); };
   $("cfgSave").onclick=()=>{
     const val=(id,fb)=>{ const el=$(id); if(!el) return fb; const v=parseDec(el.value); return isNaN(v)?fb:v; };
-    const nc=clone(cfg);
-    nc.fact=cfg.fact.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfF"+i,t.hasta)),pct:Math.max(0,val("cfP"+i,t.pct))}));
-    nc.score=cfg.score.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfS"+i,t.hasta)),mult:Math.max(0,val("cfM"+i,t.mult))}));
-    nc.at={t1:val("cfgT1",cfg.at.t1),t2:val("cfgT2",cfg.at.t2),m1:val("cfgM1",cfg.at.m1),m2:val("cfgM2",cfg.at.m2),m3:val("cfgM3",cfg.at.m3)};
-    nc.col=Math.max(0,val("cfgCol",cfg.col));
+    const fo=cfgForm, nc=clone(fo);
+    nc.fact=fo.fact.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfF"+i,t.hasta)),pct:Math.max(0,val("cfP"+i,t.pct))}));
+    nc.score=fo.score.map((t,i)=>({hasta:t.hasta==null?null:Math.max(0,val("cfS"+i,t.hasta)),mult:Math.max(0,val("cfM"+i,t.mult))}));
+    const leerAt=(k,p)=>fo[k].map((t,i)=>({desde:i===0?0:Math.max(0,val("cf"+p+"D"+i,t.desde)),mult:Math.max(0,val("cf"+p+"M"+i,t.mult))}));
+    nc.care=leerAt("care","C"); nc.seg=leerAt("seg","G");
+    const de=$("cfgDesde").value;
+    nc.desde=/^\d{4}-\d{2}$/.test(de)?de:null;
+    nc.col=Math.max(0,val("cfgCol",fo.col));
     state.libro=Math.max(0,Math.min(6,Math.round(val("cfgLibro",libraSemana()))));
     state.iva=Math.max(0,Math.min(99,val("cfgIva",ivaPct())));
     const pl=parseDec($("cfgPlus").value);
@@ -2580,28 +2687,38 @@
     // Los topes deben ir de menor a mayor para que los tramos tengan sentido
     const asc=a=>a.every((t,i)=>i===0||t.hasta==null||a[i-1].hasta==null||t.hasta>a[i-1].hasta);
     if(!asc(nc.fact)||!asc(nc.score)){ toast("⚠️ Los topes deben ir de menor a mayor"); return; }
-    if(nc.at.t2<nc.at.t1){ toast("⚠️ El tramo alto debe ser mayor que el medio"); return; }
-    cfg=nc; state.cfg=cfg; save();
+    const subeAt=a=>a.every((t,i)=>i===0||t.desde>a[i-1].desde);
+    if(!subeAt(nc.care)||!subeAt(nc.seg)){ toast("⚠️ Los % de attach deben ir de menor a mayor"); return; }
+    setCfg(nc);
     document.getElementById("dlgCfg").close();
     render(); toast("Ajustes guardados ✓");
   };
 
   /* ===== Info / export / import / wipe ===== */
+  // Las tablas que se enseñan son las del mes en vista, que puede ser de antes del PDF
   function fillInfoTables(){
+    const F=formulaDe(monthKey(view.y,view.m));
+    const mesTxt=mk=>{ const p=mk.split("-"); return monthName(+p[0],+p[1]-1).toLowerCase(); };
+    $("infoCual").textContent = F===cfg
+      ? (cfg.desde?"Fórmula piloto, desde "+mesTxt(cfg.desde)+". Los meses anteriores van con la del email.":"Fórmula piloto.")
+      : "Este mes se calcula con la fórmula del email, la que había antes de la piloto"+(cfg.desde?" (desde "+mesTxt(cfg.desde)+")":"")+".";
     const rows=(arr,fmt)=>arr.map((t,i)=>{
       const desde=i===0?0:(arr[i-1].hasta+1);
       const rango=t.hasta==null?(fmtNum.format(desde)+" o más"):(fmtNum.format(desde)+" – "+fmtNum.format(t.hasta));
       return "<tr><td>"+(i+1)+'</td><td class="num">'+rango+'</td><td class="num">'+fmt(t)+"</td></tr>";
     }).join("");
     $("infoFact").innerHTML='<tr><th>Nivel</th><th>Facturación (€)</th><th>%</th></tr>'
-      +rows(cfg.fact,t=>fmtMult.format(t.pct)+" %");
+      +rows(F.fact,t=>fmtTasa.format(t.pct)+" %");
     $("infoScore").innerHTML='<tr><th>Nivel</th><th>Score</th><th>Mult.</th></tr>'
-      +rows(cfg.score,t=>"× "+fmtMult.format(t.mult));
-    const a=cfg.at;
-    $("infoAt").innerHTML='<tr><th>Tramo</th><th>Attach</th><th>Mult.</th></tr>'
-      +'<tr><td>1</td><td class="num">menos del '+fmtPct.format(a.t1)+' %</td><td class="num">× '+fmtMult.format(a.m1)+"</td></tr>"
-      +'<tr><td>2</td><td class="num">'+fmtPct.format(a.t1)+" % – "+fmtPct.format(a.t2)+' %</td><td class="num">× '+fmtMult.format(a.m2)+"</td></tr>"
-      +'<tr><td>3</td><td class="num">'+fmtPct.format(a.t2)+' % o más</td><td class="num">× '+fmtMult.format(a.m3)+"</td></tr>";
+      +rows(F.score,t=>"× "+fmtMult.format(t.mult));
+    const filasAt=T=>T.map((t,i)=>{
+      const rango=i===0?"menos del "+fmtPct.format(T[1].desde)+" %"
+        :i===T.length-1?fmtPct.format(t.desde)+" % o más"
+        :fmtPct.format(t.desde)+" % – "+fmtPct.format(T[i+1].desde)+" %";
+      return "<tr><td>"+(i+1)+'</td><td class="num">'+rango+'</td><td class="num">× '+fmtMult.format(t.mult)+"</td></tr>";
+    }).join("");
+    $("infoCare").innerHTML='<tr><th>Tramo</th><th>CARE</th><th>Mult.</th></tr>'+filasAt(F.care);
+    $("infoSeg").innerHTML='<tr><th>Tramo</th><th>Seguros</th><th>Mult.</th></tr>'+filasAt(F.seg);
   }
   $("btnInfo").onclick=()=>{ fillInfoTables(); document.getElementById("dlgInfo").showModal(); };
 
@@ -2647,7 +2764,11 @@
           state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},objetivo:Number(d.objetivo)||undefined,libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,iva:(d.iva>=0&&d.iva<100)?Number(d.iva):undefined,plus:(d.plus>0)?Number(d.plus):undefined,tema:(d.tema==="light"||d.tema==="dark")?d.tema:undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
           migrarBases();
           construirIndice();
-          if(d.cfg&&typeof d.cfg==="object"){ cfg=Object.assign(clone(DEF_CFG),d.cfg); state.cfg=cfg; }
+          // Una copia de antes del PDF trae la fórmula del email: pasa a los meses
+          // de antes, igual que al abrir la app. Sin fórmula, se quedan las de ahora.
+          if(d.cfg&&typeof d.cfg==="object"){ state.cfg=d.cfg; state.cfgAnt=d.cfgAnt; }
+          else { state.cfg=cfg; state.cfgAnt=cfgAnt; }
+          cargarFormulas(state);
           save(); resetForm(); render();
           toast("Copia importada ✓","Deshacer",()=>restore(snap),8000);
         }
