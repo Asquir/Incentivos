@@ -142,7 +142,9 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Aviso de riesgo: cuando quedan una o ninguna venta de margen antes de
   caer de tramo de attach, avisa y cifra lo que se perdería. Las fichas
   de CARE y seguros muestran siempre el margen disponible
-  ("aguantas 3 ventas sin CARE").
+  ("aguantas 3 ventas sin CARE") y, debajo, cuántos servicios faltan para el
+  siguiente tramo ("con 2 seguros más, × 1,25"): con los tramos de seguros tan
+  pegados de la fórmula piloto, uno o dos cambian el multiplicador.
 - Progreso hacia el siguiente tramo de facturación, score y attach.
 - Historial por meses (navegación ‹ ›), lista de ventas por día y total
   estimado del año.

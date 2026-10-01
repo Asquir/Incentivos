@@ -202,6 +202,9 @@
   .pencil{position:absolute;bottom:6px;right:7px;background:none;border:none;padding:5px;cursor:pointer;font-size:12px;color:var(--muted);border-radius:6px;opacity:.55}
   .pencil.set{opacity:1;color:var(--gold-ink)}
   .tile.att .hint{padding-right:22px}
+  /* Segunda línea de la ficha de attach: lo que falta para el siguiente tramo */
+  .tile .hint .sig{display:block;margin-top:3px;color:var(--muted);font-weight:400}
+  .tile .hint .sig b{color:var(--gold-ink)}
 
   /* ---------- Add form ---------- */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;box-shadow:var(--shadow)}
@@ -724,7 +727,7 @@
 
     <h4>Lo que aporta cada venta</h4>
     <p>Debajo del importe de cada venta aparece <b>lo que suma a tu incentivo</b>: cuánto bajaría el total del mes si esa venta no existiera.</p>
-    <p>Sorprende, porque la fórmula multiplica. Dos ventas del mismo importe pueden valer <b>+27 €</b> y <b>+252 €</b> según lleven seguro o no. Y si estás justo por debajo de un tramo de attach, las ventas sin servicio salen <b>en rojo y en negativo</b>: te están diciendo cuánto te cuesta a ti cada una por mantenerte en el tramo de abajo.</p>
+    <p>Sorprende, porque la fórmula multiplica. Dos ventas del mismo importe pueden valer muy distinto según lleven seguro o no: en un mes de 40 ventas de 1.400 €, con un 45 % de CARE y un 32,5 % de seguros, la que lleva seguro aporta <b>+103 €</b> y la que va sin nada <b>+45 €</b>, porque quitar ese seguro te bajaría de tramo. Y si estás justo por debajo de un tramo de attach, las ventas sin servicio salen <b>en rojo y en negativo</b>: te están diciendo cuánto te cuesta a ti cada una por mantenerte en el tramo de abajo.</p>
     <p class="ov-note">Es lo que aporta cada una por separado, así que no se pueden sumar entre ellas: sirve para comparar unas con otras.</p>
 
     <h4>Tus propios productos</h4>
@@ -746,8 +749,8 @@
     <p class="ov-note">Se ve mientras lo montas: lo repetido se junta en una fila con su ×2, el título pone "2 unidades centrales", el botón "Venta ×2" y el de CARE "✓ CARE ×2". La ✕ de una fila agrupada quita uno cada vez. En la lista, la venta lleva su etiqueta. Los accesorios y las fundas no son unidades centrales: suman importe y score, pero no tocan el divisor.</p>
 
     <h4>Lo que te falta para subir</h4>
-    <p>Bajo el incentivo hay una línea que va enseñando, de una en una, lo que te falta para <b>subir de tramo</b> y lo que <b>ganarías de más</b> si lo consigues. Por ejemplo "68 puntos de score · ganas +10 €" quiere decir que, con 68 puntos más, el incentivo del mes te subiría 10 € por encima de lo que tienes ahora. Se turnan solas cada pocos segundos y tocándola pasa a la siguiente.</p>
-    <p class="ov-note">Cada una supone que <b>lo demás se queda como está</b>. Y como la fórmula multiplica, hacer dos a la vez da <b>más que sumar lo que da cada una</b>: por eso aparece también la línea del rayo ⚡ con las dos juntas. Ejemplo real: 3 seguros dan +69 € y 68 de score dan +10 €, pero haciendo las dos ganas +86 €, no +79 €.</p>
+    <p>Bajo el incentivo hay una línea que va enseñando, de una en una, lo que te falta para <b>subir de tramo</b> y lo que <b>ganarías de más</b> si lo consigues. Por ejemplo "21 puntos de score · ganas +31 €" quiere decir que, con 21 puntos más, el incentivo del mes te subiría 31 € por encima de lo que tienes ahora. Se turnan solas cada pocos segundos y tocándola pasa a la siguiente.</p>
+    <p class="ov-note">Cada una supone que <b>lo demás se queda como está</b>. Y como la fórmula multiplica, hacer dos a la vez da <b>más que sumar lo que da cada una</b>: por eso aparece también la línea del rayo ⚡ con las dos juntas. Ejemplo con ese mismo mes: 4 seguros dan +69 € y 21 de score dan +31 €, pero haciendo las dos ganas +107 €, no +100 €.</p>
     <p class="ov-note">Para poder comparar euros con puntos de score y con servicios, mide cada uno en ventas de las tuyas: si tu venta media es de 1.800 €, que te falten 3.600 € cuenta igual que vender dos seguros. El aviso de riesgo va aparte y sale además de la lista.</p>
 
     <h4>Tu media diaria y el ritmo que necesitas</h4>
@@ -1760,6 +1763,14 @@
     return Math.max(0,Math.floor(100*nOk/umbral-nAt));
   }
 
+  // Cuántas ventas más CON el servicio hacen falta para llegar al umbral:
+  // (nOk+k)/(nAt+k) >= umbral/100. Cuenta que cada una trae su unidad central,
+  // que es lo normal; si vendes el servicio suelto te hacen falta menos.
+  function faltanCon(nOk,nAt,umbral){
+    if(umbral>=100) return null;
+    return Math.max(1,Math.ceil((umbral*nAt-100*nOk)/(100-umbral)-1e-9));
+  }
+
   // Riesgo de caer de tramo con las próximas ventas
   function riesgo(c){
     const out=[];
@@ -1805,7 +1816,7 @@
       const targ=sig?sig.desde:null;
       if(targ==null||targ>=100) return;
       // ventas nuevas con el servicio para llegar al tramo: (nOk+k)/(nAt+k) >= targ/100
-      const need=Math.max(1,Math.ceil((targ*c.nAt-100*nOk)/(100-targ)));
+      const need=faltanCon(nOk,c.nAt,targ);
       const nuevo=(nOk+need)/(c.nAt+need)*100;
       const t=k==="care"?computeTotals(c.fact,c.score,nuevo,c.pctSeg,c.F):computeTotals(c.fact,c.score,c.pctCare,nuevo,c.F);
       const nom=k==="care"?"CARE":(need===1?"seguro":"seguros");
@@ -1895,8 +1906,13 @@
     setLvl("lvl"+key,"× "+fmtMult.format(mult),top?"top":(paso===0?"low":""));
     setSteps("st"+key,N,paso+1,top);
     hint.className="hint";
+    // Lo que falta para el siguiente tramo, en servicios y no en puntos de
+    // porcentaje: con los tramos de seguros tan pegados, uno o dos cambian el ×
+    const nombre=k=>key==="Care"?k+" CARE":(k===1?"1 seguro":k+" seguros");
+    const falta=(!isManual&&sig)?faltanCon(nOk,n,sig.desde):null;
+    const subir=falta!=null?"Con <b>"+nombre(falta)+"</b> más, × "+fmtMult.format(sig.mult):"";
     if(paso===0&&sig){
-      hint.innerHTML="A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
+      hint.innerHTML=subir||"A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
       return;
     }
     if(isManual){
@@ -1907,9 +1923,10 @@
     // El badge ya dice el multiplicador, así que aquí avisamos del margen que queda
     const svc=key==="Care"?"CARE":"seguro";
     const m=margen(nOk,n,T[paso].desde);
-    if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"; }
-    else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc; }
-    else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin "+svc;
+    const extra=subir?'<span class="sig">'+subir+"</span>":"";
+    if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"+extra; }
+    else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc+extra; }
+    else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin "+svc+extra;
   }
 
   // Lo que aporta una venta al incentivo: cuánto bajaría el total si no existiera.

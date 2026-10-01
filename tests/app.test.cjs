@@ -346,3 +346,48 @@ test("la app abre sin datos guardados y sin errores", async () => {
   assert.equal(await texto(p, "#totalIncentivo"), "0,00 €");
   await cerrar(p);
 });
+
+/* ===== Lo que falta para el siguiente tramo, en las fichas ===== */
+
+// 40 ventas de 1.400 €: las primeras con CARE y las últimas con seguro
+function mesDeVentas(care, seg, n = 40) {
+  const ventas = [];
+  for (let i = 0; i < n; i++)
+    ventas.push({ id: "v" + i, date: "2026-10-" + String(1 + i % 14).padStart(2, "0"), ts: i, amount: 1400, score: 12, care: i < care, seguro: i >= n - seg, items: [] });
+  return { ventas, overrides: {} };
+}
+
+test("la ficha de seguros dice cuántos faltan para el siguiente tramo, igual que la línea de movimientos", async () => {
+  // 13 de 40 = 32,5 % (× 1): 13/41 = 31,7 % ya baja, y para el 38 % hacen falta 4 más, 17/44 = 38,6 %
+  const p = await abrir(mesDeVentas(18, 13));
+  const h = await texto(p, "#hSeg");
+  assert.match(h, /próxima sin seguro te baja/);
+  assert.match(h, /Con 4 seguros más, × 1,25/);
+  const vistos = new Set();
+  for (let i = 0; i < 5; i++) { vistos.add(await texto(p, "#levs")); await p.click("#levs"); await p.waitForTimeout(250); }
+  assert.ok([...vistos].some(t => /4 seguros más/.test(t)), [...vistos].join(" | "));
+  await cerrar(p);
+});
+
+test("en el tramo más bajo la ficha lo dice en servicios, no en puntos", async () => {
+  // 10 de 40 = 25 % de CARE: para el 35 % hacen falta 7, 17/47 = 36,2 % (con 6, 16/46 = 34,8 %)
+  const p = await abrir(mesDeVentas(10, 13));
+  assert.equal(await texto(p, "#hCare"), "Con 7 CARE más, × 0,75");
+  await cerrar(p);
+});
+
+test("en el tramo alto no hay siguiente y solo queda el margen", async () => {
+  const p = await abrir(mesDeVentas(30, 20));
+  const h = await texto(p, "#hCare");
+  assert.match(h, /^Aguantas \d+ unidades sin CARE$/);
+  await cerrar(p);
+});
+
+test("con el aviso en rojo, lo que falta para subir va debajo sin teñirse", async () => {
+  // 7 de 20 = 35 % justo de CARE: la próxima sin CARE baja; para el 40 % faltan 2 (9/22 = 40,9 %)
+  const p = await abrir(mesDeVentas(7, 9, 20));
+  assert.match(await texto(p, "#hCare"), /próxima sin CARE te baja\s*Con 2 CARE más, × 1/);
+  const color = await p.$eval("#hCare .sig", e => getComputedStyle(e).fontWeight);
+  assert.equal(color, "400");
+  await cerrar(p);
+});
