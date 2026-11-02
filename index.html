@@ -127,6 +127,7 @@
   .chain .cx b{font-size:12.5px;font-weight:800;color:var(--hero-ink)}
   .chain .cx.hi b{color:var(--gold)}
   .chain .cx.lo b{color:#E9836B}
+  .chain .cvacio{margin:0;font-size:13.5px;color:var(--hero-muted);line-height:1.4}
   .chain .cell{display:flex;flex-direction:column;gap:3px}
   .chain .cv{font-size:16px;font-weight:800;color:var(--hero-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
   .chain .cv.hi{color:var(--gold)}
@@ -211,6 +212,8 @@
   /* Parte 4: ocupa el ancho entero, con un chip por multiplicador */
   .tile.wide{grid-column:1 / -1;cursor:pointer}
   .tile.wide .hint{padding-right:22px}
+  .tile.wide.vacia .hint{font-size:13px;margin-top:2px}
+  .tile.wide .hint .p4cta{color:var(--ink)}
   .p4chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
   @media (max-width:360px){ .p4chips{grid-template-columns:1fr 1fr} }
   .p4c{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:9px;
@@ -511,7 +514,7 @@
   .mbody table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
   .mbody th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--line)}
   .mbody td{padding:6px 8px;border-bottom:1px solid var(--line)}
-  .mbody td:last-child,.mbody th:last-child{text-align:right;font-weight:700}
+  .mbody td:last-child,.mbody th:last-child{text-align:right;font-weight:700;white-space:nowrap}
   .mclose{
     width:calc(100% - 40px);margin:0 20px 20px;border:none;border-radius:12px;padding:13px;
     background:var(--surface2);border:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
@@ -521,6 +524,11 @@
   .ov-field input{width:90px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);font-size:16px;font-weight:700;padding:8px 10px;text-align:right;font-family:inherit}
   .ov-note{font-size:12.5px;color:var(--muted)}
   .cfgt td{padding:4px 6px}
+  .vertablas{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:8px;
+    background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:11px 14px;
+    font:inherit;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
+  .vertablas .chev{transition:transform .2s ease;color:var(--muted)}
+  .vertablas[aria-expanded="true"] .chev{transform:rotate(180deg)}
   .cfgt td:first-child{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
   .cfgt input{
     width:100%;min-width:0;border:1.5px solid var(--line);border-radius:9px;background:var(--surface2);
@@ -665,7 +673,7 @@
       <button class="pencil" id="editSeg" aria-label="Editar % SEGUROS">✎</button>
     </div>
     <div class="tile wide" id="tileP4" hidden>
-      <div class="t"><span class="tname">Objetivos y tienda</span><span class="lvl low" id="lvlP4" hidden>sin datos</span></div>
+      <div class="t"><span class="tname">Objetivos y tienda</span></div>
       <div class="p4chips" id="p4Chips"></div>
       <div class="hint" id="hP4"></div>
       <button class="pencil" id="editP4" aria-label="Poner los datos de este mes">✎</button>
@@ -855,13 +863,16 @@
     <p class="ov-note" id="ovCalc" hidden></p>
     <p class="ov-note" id="ovAuto"></p>
   </div>
-  <button class="mclose" id="ovSave">Guardar</button>
+  <div class="askrow">
+    <button class="mclose" id="ovCancelar">Cancelar</button>
+    <button class="mclose yes" id="ovSave">Guardar</button>
+  </div>
 </dialog>
 
 <dialog id="dlgCfg">
   <div class="mbody">
     <h3>Ajustes</h3>
-    <p class="sub">Tus preferencias y las tablas de la fórmula, por si la empresa las cambia.</p>
+    <p class="sub">Tus preferencias. Las tablas de la fórmula van al final, plegadas, por si la empresa las cambia.</p>
 
     <h4>Aspecto</h4>
     <div class="seg seg3" id="cfgTema">
@@ -885,7 +896,17 @@
     <div class="ov-field" style="margin-top:9px"><label for="cfgFuera" id="cfgFueraLbl">Festivos y vacaciones</label><input id="cfgFuera" inputmode="numeric" placeholder="0"></div>
     <p class="ov-note">Los días de este mes que no vas a trabajar además de tus libres. Se guarda mes a mes.</p>
 
-    <h4>Fórmula piloto</h4>
+    <div id="cfgMiosBloque" hidden>
+      <h4>Mis productos</h4>
+      <p class="ov-note">Los que has creado tú desde el buscador.</p>
+      <div id="cfgMios"></div>
+    </div>
+
+    <h4>Fórmula de incentivos</h4>
+    <p class="ov-note">Las tablas del PDF. Solo hay que tocarlas si la empresa las cambia.</p>
+    <button type="button" class="vertablas" id="cfgVerTablas" aria-expanded="false" aria-controls="cfgTablas"><span>Ver tablas de la fórmula</span><span class="chev">⌄</span></button>
+    <div id="cfgTablas" hidden>
+    <h4>Desde qué mes</h4>
     <p class="ov-note">Las tablas de abajo son las del PDF de la fórmula piloto. Los meses anteriores al que pongas aquí se siguen calculando con la fórmula del email, que es la que se cobró. Vacío, se aplica a todos.</p>
     <div class="ov-field"><label for="cfgDesde">Se aplica desde</label><input id="cfgDesde" type="month" style="width:auto;min-width:150px"></div>
 
@@ -913,14 +934,9 @@
       <tbody id="cfgSeg"></tbody>
     </table>
 
-    <div id="cfgMiosBloque" hidden>
-      <h4>Mis productos</h4>
-      <p class="ov-note">Los que has creado tú desde el buscador.</p>
-      <div id="cfgMios"></div>
-    </div>
-
     <h4>Parte 4 · Multiplicadores colectivos</h4>
     <p class="ov-note">Objetivos, reseñas, telefonía y servicio técnico van mes a mes: se ponen en la ficha <b>Objetivos y tienda</b>, debajo de CARE y seguros.</p>
+    </div>
   </div>
   <div class="askrow">
     <button class="mclose" id="cfgReset">Valores del PDF</button>
@@ -1497,8 +1513,14 @@
       });
     } else if(c.col!==1) extra.push(pieza("×&nbsp;"+fmtMult.format(c.col),"tienda",""));
     if(c.plus>0) extra.push(pieza("+&nbsp;"+fmtEUR0.format(c.plus),"plus","hi"));
-    $("chain").innerHTML='<div class="crow">'+chain+"</div>"
-      +(extra.length?'<div class="cextra">'+extra.join("")+"</div>":"");
+    // Un mes sin nada apuntado no se desglosa: "0,00 € × 1 × 0,25 × 0,25" en
+    // rojo el día 1 parece un castigo y no dice nada
+    const vacio=!c.n&&!c.fact&&!c.score;
+    $("chain").innerHTML=vacio
+      ? '<p class="cvacio">'+(mesCerrado(view.y,view.m)?"Este mes no tiene ventas apuntadas."
+          :"Apunta tu primera venta del mes y aquí verás de dónde sale cada euro.")+"</p>"
+      : '<div class="crow">'+chain+"</div>"
+        +(extra.length?'<div class="cextra">'+extra.join("")+"</div>":"");
 
     pintarMeta(c);
     pintarP4(c);
@@ -2045,13 +2067,15 @@
       return '<span class="p4c '+(m==null?"":(m>1?"hi":(m<1?"lo":"eq")))+'"><span class="k">'+lbl+'</span>'
         +'<span class="m">'+(m==null?"—":"× "+fmtMult.format(m))+"</span></span>";
     }).join("");
-    const nada=[r.obj,r.res,r.tel,r.sat].every(m=>m==null);
-    $("lvlP4").hidden=!nada;
+    // Sin ningún dato puesto la ficha se queda en una línea: cuatro casillas con "—" no dicen nada
+    const nada=["obj","tienda","resenas","llamadas","calidad","repar"].every(k=>X[k]==null);
+    tile.classList.toggle("vacia",nada);
+    $("p4Chips").hidden=nada;
     $("editP4").classList.toggle("set",!nada);
     const h=$("hP4");
     if(X.obj==null){
       const ant=objetivoAnterior(view.y,view.m), a=ant&&mesDeKey(ant.mk);
-      h.innerHTML=(nada?"Toca para poner tu objetivo y los datos de la tienda. Sin datos cuenta × 1."
+      h.innerHTML=(nada?"🎯 <b class=\"p4cta\">Pon tu objetivo y los datos de la tienda</b>."
         :"Sin tu objetivo puesto, el de objetivos cuenta × 1.")
         +(ant?" En "+nombreMes(a.y,a.m)+" era de <b>"+fmtEUR0.format(ant.obj)+"</b>.":"");
       return;
@@ -2295,7 +2319,8 @@
     if(pct==null){
       v.firstChild.textContent="— ";
       cnt.textContent="";
-      setLvl("lvl"+key,"× "+fmtMult.format(T[0].mult),"low");
+      // Sin ninguna venta todavía no hay tramo que enseñar: el × 0,25 sería un castigo de mentira
+      setLvl("lvl"+key,nAcc?"× "+fmtMult.format(T[0].mult):"—","low");
       setSteps("st"+key,N,0,false);
       hint.textContent=nAcc?"Solo sueltos este mes":"Sin ventas todavía";
       return;
@@ -3001,6 +3026,7 @@
   $("editScore").onclick=()=>openOverride("score");
   $("editCare").onclick=()=>openOverride("care");
   $("editSeg").onclick=()=>openOverride("seg");
+  $("ovCancelar").onclick=()=>document.getElementById("dlgOverride").close();
   $("ovSave").onclick=()=>{
     const mk=monthKey(view.y,view.m);
     const pre=computeMonth(view.y,view.m);
@@ -3108,8 +3134,22 @@
     $("cfgFuera").value=f?String(f):"";
     pintarMisProductos();
     const dlg=document.getElementById("dlgCfg");
-    if(!dlg.open) dlg.showModal();
+    // Las tablas se abren plegadas; "Valores del PDF" las rellena con el diálogo ya abierto y no las pliega
+    if(!dlg.open){ verTablas(false); dlg.showModal(); }
   }
+  function verTablas(si){
+    $("cfgTablas").hidden=!si;
+    $("cfgVerTablas").setAttribute("aria-expanded",si?"true":"false");
+    $("cfgVerTablas").firstChild.textContent=si?"Ocultar tablas de la fórmula":"Ver tablas de la fórmula";
+    // Sin las tablas a la vista, "Valores del PDF" no tiene nada que rellenar
+    $("cfgReset").hidden=!si;
+  }
+  $("cfgVerTablas").onclick=()=>{
+    const abrir=$("cfgTablas").hidden;
+    verTablas(abrir);
+    // Al desplegarlas, que se vean: el botón sube arriba del diálogo y las tablas debajo
+    if(abrir) $("cfgVerTablas").scrollIntoView({block:"start",behavior:reducedMotion()?"auto":"smooth"});
+  };
   $("btnCfg").onclick=()=>openCfg();
   $("cfgReset").onclick=()=>{ openCfg(clone(DEF_CFG)); toast("Valores del PDF puestos: falta Guardar"); };
   $("cfgSave").onclick=()=>{

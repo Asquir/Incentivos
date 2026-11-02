@@ -241,13 +241,21 @@ test("importar una copia de antes del PDF la migra igual", async () => {
 
 /* ===== Ajustes ===== */
 
+// Ajustes abre con las tablas de la fórmula plegadas: hay que desplegarlas para tocarlas
+async function abrirTablas(p) {
+  await p.click("#btnCfg");
+  assert.ok(await p.locator("#cfgTablas").isHidden(), "las tablas empiezan plegadas");
+  assert.ok(await p.locator("#cfgReset").isHidden(), "sin tablas a la vista no hay Valores del PDF");
+  await p.click("#cfgVerTablas");
+}
+
 test("en Ajustes se cambia desde qué mes cuenta la fórmula del PDF", async () => {
   const p = await abrir(mesAMano("2026-09", 48000, 346, 48, 45));
   await p.click("#prevM");
   assert.equal(await texto(p, "#totalIncentivo"), EUR.format(
     // Con la del email: 48.000 × 0,25 % = 120 → × 2,25 = 270 → × 1,35 × 1,35
     Math.round(270 * 1.35 * 1.35 * 100) / 100));
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   assert.equal(await p.inputValue("#cfgDesde"), "2026-10");
   assert.equal(await p.locator("#cfgCare tr").count(), 4);
   assert.equal(await p.locator("#cfgSeg tr").count(), 4);
@@ -262,12 +270,12 @@ test("en Ajustes se cambia desde qué mes cuenta la fórmula del PDF", async () 
 test("los tramos de attach se editan por separado y se validan", async () => {
   const p = await abrir(mesAMano("2026-10", 48000, 346, 36, 45));
   assert.equal(await texto(p, "#lvlCare"), "× 0,75");
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   await p.fill("#cfCD1", "37");
   await p.click("#cfgSave");
   assert.equal(await texto(p, "#lvlCare"), "× 0,25");
   assert.equal(await texto(p, "#lvlSeg"), "× 1,25", "seguros no se toca");
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   await p.fill("#cfGD2", "20");
   await p.click("#cfgSave");
   assert.match(await texto(p, "#toastMsg"), /menor a mayor/);
@@ -277,11 +285,11 @@ test("los tramos de attach se editan por separado y se validan", async () => {
 
 test("Valores del PDF no cambia nada si se cierra sin guardar", async () => {
   const p = await abrir(mesAMano("2026-10", 48000, 346, 36, 45));
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   await p.fill("#cfCD1", "37");
   await p.click("#cfgSave");
   assert.equal(await texto(p, "#lvlCare"), "× 0,25");
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   await p.click("#cfgReset");
   assert.equal(await p.inputValue("#cfCD1"), "35");
   await p.keyboard.press("Escape");
@@ -289,7 +297,7 @@ test("Valores del PDF no cambia nada si se cierra sin guardar", async () => {
   assert.equal(await texto(p, "#lvlCare"), "× 0,25");
   assert.equal((await guardado(p)).cfg.care[1].desde, 37);
   // Y guardando sí vuelve a los del PDF
-  await p.click("#btnCfg");
+  await abrirTablas(p);
   await p.click("#cfgReset");
   await p.click("#cfgSave");
   assert.equal(await texto(p, "#lvlCare"), "× 0,75");
@@ -441,7 +449,8 @@ test("sin datos de la Parte 4 nada cambia y la ficha lo dice", async () => {
   const p = await abrir(mesAMano("2026-11", 48000, 346, 48, 45), "2026-11-20T12:00:00");
   assert.equal(await texto(p, "#totalIncentivo"), "225,00 €");
   assert.ok(!(await p.locator("#tileP4").isHidden()));
-  assert.ok(!(await p.locator("#lvlP4").isHidden()), "marca sin datos");
+  assert.ok(await p.locator("#p4Chips").isHidden(), "sin datos, la ficha es una sola línea");
+  assert.match(await texto(p, "#hP4"), /Pon tu objetivo y los datos de la tienda/);
   assert.match(await texto(p, "#metaTxt"), /Pon tu objetivo del mes/);
   await cerrar(p);
 });
@@ -726,5 +735,43 @@ test("el ejemplo no pisa el objetivo que ya tenías", async () => {
   assert.match(await texto(p, "#metaTxt"), /Objetivo 70\.000 €/);
   await p.click("#btnQuitarEjemplo");
   assert.deepEqual((await guardado(p)).overrides["2026-11"].p4, { obj: 70000 });
+  await cerrar(p);
+});
+
+/* ===== Retoques visuales ===== */
+
+test("un mes sin ventas no se pinta en rojo", async () => {
+  const p = await abrir({ ventas: [], overrides: {} }, "2026-11-20T12:00:00");
+  assert.match(await texto(p, "#chain"), /Apunta tu primera venta del mes/);
+  assert.equal(await p.locator("#chain .cv.lo").count(), 0);
+  assert.equal(await texto(p, "#lvlCare"), "—");
+  assert.equal(await texto(p, "#lvlSeg"), "—");
+  // Un mes pasado sin nada lo dice en pasado
+  await p.click("#prevM");
+  assert.match(await texto(p, "#chain"), /no tiene ventas apuntadas/);
+  // Con un suelto ya hay mes: el × 0,25 es de verdad y se enseña
+  const q = await abrir({ ventas: [{ id: "a", date: "2026-11-10", ts: 1, amount: 30, score: 2, care: false, seguro: false, acc: true, items: [] }], overrides: {} }, "2026-11-20T12:00:00");
+  assert.equal(await texto(q, "#lvlCare"), "× 0,25");
+  assert.match(await texto(q, "#chain"), /VENTAS/i);
+  await cerrar(q);
+  await cerrar(p);
+});
+
+test("la ficha de tienda vacía es una línea y se despliega en cuanto hay un dato", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  e.overrides["2026-11"].p4 = { llamadas: 85 };
+  const p = await abrir(e, "2026-11-20T12:00:00");
+  assert.ok(!(await p.locator("#p4Chips").isHidden()), "con un dato, salen las casillas");
+  assert.match(await texto(p, "#p4Chips"), /TELÉFONO\s+—/i, "falta la nota: aún × 1");
+  await cerrar(p);
+});
+
+test("el ✎ de facturación se puede cancelar sin tocar nada", async () => {
+  const p = await abrir(mesAMano("2026-11", 48000, 346, 48, 45), "2026-11-20T12:00:00");
+  await p.click("#editFact");
+  await p.fill("#ovInput", "99000");
+  await p.click("#ovCancelar");
+  assert.ok(!(await p.locator("#dlgOverride").isVisible()));
+  assert.equal(await texto(p, "#totalIncentivo"), "225,00 €");
   await cerrar(p);
 });

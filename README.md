@@ -208,6 +208,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   derecha. En móviles estrechos el producto baja a su propia línea.
 - El desglose del incentivo va en dos líneas: las tres partes de siempre, y
   debajo, en piezas pequeñas, los multiplicadores de la tienda y el plus.
+- Un mes sin ventas no se desglosa ni se pinta en rojo: sale "Apunta tu
+  primera venta del mes" y CARE y seguros quedan en "—" hasta que hay ventas.
+- Ajustes enseña primero lo de uso diario; las tablas de la fórmula van al
+  final, plegadas tras "Ver tablas de la fórmula".
 - **Modo claro u oscuro** a elección en Ajustes: Automático (sigue al sistema),
   Claro u Oscuro. Se aplica antes del primer pintado, así que la app no abre
   un instante con el tema equivocado, y la barra de estado del móvil también
