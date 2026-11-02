@@ -51,7 +51,8 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
     font-size:16px; line-height:1.45;
     padding-top:env(safe-area-inset-top);
-    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+    /* El botón + flota abajo a la derecha: lo último de la página no debe quedar debajo */
+    padding-bottom:calc(92px + env(safe-area-inset-bottom));
     -webkit-tap-highlight-color:transparent;
   }
   button,.chip,.lvl{-webkit-user-select:none;user-select:none}
@@ -116,11 +117,16 @@
   }
   .hero .total small{font-size:26px;font-weight:700}
   /* Cadena del cálculo: 137,50 € × 2,25 × 1,35 × 1,35 */
-  .chain{
-    /* Con el plus pueden ser cinco piezas: que bajen de línea antes que salirse */
-    display:flex;flex-wrap:wrap;align-items:flex-end;gap:7px;row-gap:11px;
-    margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.1);
-  }
+  .chain{margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.1)}
+  /* Las tres partes: en una línea; solo bajan si la pantalla es muy estrecha */
+  .chain .crow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:7px;row-gap:11px}
+  /* Tienda y plus: una línea de piezas pequeñas debajo */
+  .chain .cextra{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chain .cx{font-size:11.5px;font-weight:600;color:var(--hero-muted);white-space:nowrap;
+    border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:3px 9px}
+  .chain .cx b{font-size:12.5px;font-weight:800;color:var(--hero-ink)}
+  .chain .cx.hi b{color:var(--gold)}
+  .chain .cx.lo b{color:#E9836B}
   .chain .cell{display:flex;flex-direction:column;gap:3px}
   .chain .cv{font-size:16px;font-weight:800;color:var(--hero-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
   .chain .cv.hi{color:var(--gold)}
@@ -384,27 +390,38 @@
   .plegable:active{transform:scale(.99)}
   .day{margin-bottom:14px}
   .day .dh{font-size:12.5px;font-weight:700;color:var(--muted);margin:0 2px 6px;display:flex;justify-content:space-between}
-  .sale{
-    display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
-    border-radius:14px;padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow);
-  }
-  .sale .amt{font-size:17px;font-weight:800;min-width:96px}
+  /* Una tarjeta por día con una fila por venta */
+  .dcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .sale{display:flex;align-items:center;gap:8px;padding:9px 6px 9px 12px;border-top:1px solid var(--line)}
+  .sale:first-child{border-top:none}
+  .sale .sm{flex:1;min-width:0}
+  .sale .sl1{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .sale .amt{font-size:15.5px;font-weight:800;white-space:nowrap}
+  .sale .note{font-size:12.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sale .sl2{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .sale .chip{font-size:9.5px;padding:1.5px 6px;border-radius:5px}
   /* Lo que esa venta aporta a tu incentivo */
-  .sale .apo{display:block;font-size:11.5px;font-weight:800;margin-top:2px;white-space:nowrap}
+  .sale .apo{text-align:right;font-size:13px;font-weight:800;white-space:nowrap;line-height:1.15}
+  .sale .apo small{display:block;font-size:9.5px;font-weight:600;color:var(--muted)}
   .sale .apo.pos{color:var(--good)}
   .sale .apo.neg{color:var(--bad)}
   .sale .apo.cero{color:var(--muted);font-weight:600}
-  .sale .meta{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:0}
   .chip{font-size:10.5px;font-weight:800;border-radius:6px;padding:2.5px 7px;letter-spacing:.04em}
   .chip.score{background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
   .chip.acc{background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid var(--line);color:var(--muted)}
   .chip.uds{background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid var(--line);color:var(--ink);font-weight:800}
   .chip.care{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
   .chip.seg{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold-ink);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
-  .sale .note{font-size:12px;color:var(--muted);flex-basis:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sale .act{display:flex;gap:2px}
-  .sale .act button{background:none;border:none;font-size:15px;padding:6px;cursor:pointer;color:var(--muted);border-radius:8px}
+  .sale .act{display:flex;gap:0}
+  .sale .act button{background:none;border:none;font-size:14px;padding:8px 7px;cursor:pointer;color:var(--muted);border-radius:8px}
   .sale .act button:hover{color:var(--ink)}
+  /* En móviles estrechos el producto no cabe al lado del importe: va debajo */
+  @media (max-width:360px){
+    .sale .sl1{display:block}
+    .sale .note{display:block;margin-top:1px}
+    .monthbar h2{font-size:20px;letter-spacing:-.01em}
+    .hero .label{letter-spacing:.08em}
+  }
   /* Filtro para ver dónde se te escapó el attach */
   .filtros{display:flex;gap:7px;margin-bottom:9px}
   .fch{
@@ -450,7 +467,7 @@
 
   /* ---------- Evolución ---------- */
   .trend{
-    display:flex;align-items:flex-end;gap:6px;height:112px;padding:12px 12px 0;
+    display:flex;align-items:flex-end;gap:6px;height:124px;padding:12px 12px 0;
     background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
   }
   .tcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%;background:none;border:none;padding:0;cursor:pointer;font-family:inherit}
@@ -463,6 +480,12 @@
   .tcol.empty .tbar{background:var(--line)}
   .tcol .tlbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:capitalize;padding-bottom:8px}
   .tcol.now .tlbl,.tcol.now .tval{color:var(--good)}
+  /* Mes en curso: lo hecho, relleno, dentro de lo que se lleva camino de hacer */
+  .tcol .tghost{width:100%;display:flex;align-items:flex-end;box-sizing:border-box;
+    border:1.5px dashed color-mix(in srgb,var(--good) 55%,transparent);border-bottom:none;border-radius:6px 6px 3px 3px}
+  .tcol .tghost .tbar{border-radius:0 0 3px 3px}
+  .tcol .tval{text-align:center;line-height:1.25}
+  .tcol .tproy{display:block;font-size:9px;font-weight:700;color:var(--muted)}
   #trendSub.mejor{color:var(--good);font-weight:800}
   #trendSub.peor{color:var(--bad);font-weight:800}
 
@@ -598,7 +621,7 @@
 
   <section class="hero" id="hero">
     <div class="toprow">
-      <div class="label">Incentivo estimado del mes</div>
+      <div class="label">Incentivo estimado</div>
       <button class="share" id="btnShare">Compartir ↗</button>
     </div>
     <div class="total display num" id="totalIncentivo">0,00 €</div>
@@ -1459,19 +1482,23 @@
     setTotal(c.total);
     // Cadena del cálculo en una línea: 137,50 € × 2,25 × 1,35 × 1,35
     const cls=(k,m)=>{ const T=tramosAt(k,c.F); return m<=T[0].mult?"lo":(m>=T[T.length-1].mult?"hi":""); };
+    // Las tres partes de siempre van en una línea; lo de la tienda y el plus,
+    // que pueden ser cinco piezas más, en otra debajo y más pequeña
     let chain=cell(fmtEUR.format(c.parte1),"ventas","");
     chain+=cell("× "+fmtMult.format(c.tS.mult),"score",c.tS.mult>1?"hi":"");
     chain+=cell("× "+fmtMult.format(c.mCare),"care",cls("care",c.mCare));
     chain+=cell("× "+fmtMult.format(c.mSeg),"seguros",cls("seg",c.mSeg));
+    const extra=[], pieza=(v,lbl,kind)=>'<span class="cx '+kind+'"><b class="num">'+v+"</b> "+lbl+"</span>";
     if(c.p4){
       // Solo los que cambian algo: un × 1 o uno sin datos no aporta al desglose
       [["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SAT"]].forEach(([k,lbl])=>{
         const m=c.p4[k];
-        if(m!=null&&m!==1) chain+=cell("× "+fmtMult.format(m),lbl,m>1?"hi":"lo");
+        if(m!=null&&m!==1) extra.push(pieza("×&nbsp;"+fmtMult.format(m),lbl,m>1?"hi":"lo"));
       });
-    } else if(c.col!==1) chain+=cell("× "+fmtMult.format(c.col),"tienda","");
-    if(c.plus>0) chain+=cell(fmtEUR0.format(c.plus),"plus","hi","+");
-    $("chain").innerHTML=chain;
+    } else if(c.col!==1) extra.push(pieza("×&nbsp;"+fmtMult.format(c.col),"tienda",""));
+    if(c.plus>0) extra.push(pieza("+&nbsp;"+fmtEUR0.format(c.plus),"plus","hi"));
+    $("chain").innerHTML='<div class="crow">'+chain+"</div>"
+      +(extra.length?'<div class="cextra">'+extra.join("")+"</div>":"");
 
     pintarMeta(c);
     pintarP4(c);
@@ -1493,29 +1520,19 @@
     // Lo que te falta para subir, una opción cada vez y turnándose sola
     ciclarPalancas(palancas(c));
 
-    // Proyección a fin de mes (solo mes en curso, con al menos una semana de datos)
-    const today=new Date();
-    const dim=new Date(view.y,view.m+1,0).getDate();
-    const day=isCurrent?Math.min(today.getDate(),dim):dim;
-    // Se cuentan los días que trabajas, no los del calendario
-    // Los festivos y vacaciones se reparten a lo largo del mes: los que ya han
-    // pasado salen de los días hechos y el resto de los que quedan
-    const fuera=diasFuera(view.y,view.m);
-    const hechos=Math.max(1,diasCurrados(day)-Math.round(fuera*day/dim));
-    const totales=Math.max(hechos,diasCurrados(dim)-fuera);
+    // Media diaria y proyección a fin de mes
+    const rm=ritmoMes(c,view.y,view.m);
     let projHtml="";
     if(c.fact>0){
       // La media diaria va siempre: es la lectura más directa de cómo va el mes
-      projHtml='<b class="num">'+fmtEUR0.format(c.fact/hechos)+"/día</b>&nbsp;de&nbsp;media";
-      const quedan=totales-hechos;
-      // Con menos de una semana los datos dan proyecciones disparatadas
-      if(isCurrent&&day>=7&&quedan>0){
+      projHtml='<b class="num">'+fmtEUR0.format(c.fact/rm.hechos)+"/día</b>&nbsp;de&nbsp;media";
+      if(rm.cierre!=null){
         const falta=ritmoObjetivo(c);
         projHtml+= (falta!=null)
           // Con objetivo puesto interesa más el ritmo que hace falta que la proyección
-          ? " · para tu objetivo, <b class=\"num\">"+fmtEUR0.format(falta/quedan)+"/día</b>"
-          : " · quedan <b>"+quedan+(quedan===1?" día":" días")+"</b> · <b class=\"num\">~"
-            +fmtEUR0.format(computeTotals(c.fact/hechos*totales,c.score/hechos*totales,c.pctCare,c.pctSeg,c.F,c.X).total)+"</b>&nbsp;al&nbsp;cierre";
+          ? " · para tu objetivo, <b class=\"num\">"+fmtEUR0.format(falta/rm.quedan)+"/día</b>"
+          : " · quedan <b>"+rm.quedan+(rm.quedan===1?" día":" días")+"</b> · <b class=\"num\">~"
+            +fmtEUR0.format(rm.cierre)+"</b>&nbsp;al&nbsp;cierre";
       }
     }
     $("proj").innerHTML=projHtml;
@@ -1529,7 +1546,7 @@
     setLvl("lvlFact",fmtTasa.format(c.tF.pct)+" %",!nextF?"top":(c.tF.pct>0?"":"low"));
     setSteps("stFact",LF.length,c.tF.nivel,!nextF);
     if(nextF&&c.tF.hasta!=null){
-      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtTasa.format(nextF.pct)+" %";
+      $("hFact").innerHTML="Te faltan <b>"+fmtEUR0.format(Math.max(0,c.tF.hasta+1-c.fact))+"</b> para el "+fmtTasa.format(nextF.pct)+"&nbsp;%";
     } else {
       $("hFact").textContent="¡Estás en el tramo más alto!";
     }
@@ -1542,7 +1559,7 @@
     setLvl("lvlScore","× "+fmtMult.format(c.tS.mult),!nextS?"top":(c.tS.mult>1?"":"low"));
     setSteps("stScore",LS.length,c.tS.nivel,!nextS);
     if(nextS&&c.tS.hasta!=null){
-      $("hScore").innerHTML="Te faltan <b>"+fmtNum.format(c.tS.hasta+1-c.score)+"</b> puntos para × "+fmtMult.format(nextS.mult);
+      $("hScore").innerHTML="Te faltan <b>"+fmtNum.format(c.tS.hasta+1-c.score)+"</b> puntos para ×&nbsp;"+fmtMult.format(nextS.mult);
     } else {
       $("hScore").textContent="¡Estás en el tramo más alto!";
     }
@@ -1569,6 +1586,24 @@
     $("yearTotal").textContent = yMonths>1 ? "Total estimado "+view.y+": "+fmtEUR.format(ySum) : "";
 
     renderTrend();
+  }
+
+  // Días trabajados y por trabajar de un mes, y adónde llegaría el incentivo a
+  // este ritmo. Se cuentan los días que trabajas, no los del calendario, y los
+  // festivos y vacaciones se reparten a lo largo del mes: los que ya han pasado
+  // salen de los días hechos y el resto de los que quedan. La proyección solo
+  // existe en el mes en curso y con una semana de datos: antes sale disparatada.
+  function ritmoMes(c,y,m){
+    const today=new Date(), isCurrent=y===now.getFullYear()&&m===now.getMonth();
+    const dim=new Date(y,m+1,0).getDate();
+    const day=isCurrent?Math.min(today.getDate(),dim):dim;
+    const fuera=diasFuera(y,m);
+    const hechos=Math.max(1,diasCurrados(day)-Math.round(fuera*day/dim));
+    const totales=Math.max(hechos,diasCurrados(dim)-fuera);
+    const quedan=totales-hechos;
+    const cierre=(isCurrent&&day>=7&&quedan>0&&c.fact>0)
+      ?computeTotals(c.fact/hechos*totales,c.score/hechos*totales,c.pctCare,c.pctSeg,c.F,c.X).total:null;
+    return {hechos,totales,quedan,cierre};
   }
 
   // Incentivo de un mes contando solo hasta cierto día, para comparar en igualdad
@@ -1617,7 +1652,13 @@
     const withData=months.filter(x=>x.c.n).length;
     $("trendBox").hidden=withData<2;
     if(withData<2) return;
-    const max=Math.max(...months.map(x=>x.c.total),1);
+    // El mes en curso va a medias: además de lo hecho se dibuja, en contorno,
+    // adónde llegaría a este ritmo, para no compararlo con meses enteros
+    months.forEach(x=>{
+      const r=(x.y===now.getFullYear()&&x.m===now.getMonth())?ritmoMes(x.c,x.y,x.m):null;
+      x.cierre=r&&r.cierre!=null&&r.cierre>x.c.total+0.5?r.cierre:null;
+    });
+    const max=Math.max(...months.map(x=>Math.max(x.c.total,x.cierre||0)),1);
     // En el mes actual se compara con el anterior a estas alturas; si no, el rango
     const cmp=compararMesAnterior(computeMonth(view.y,view.m));
     const sub=$("trendSub");
@@ -1634,10 +1675,14 @@
     $("trend").innerHTML=months.map(x=>{
       const h=x.c.total>0?Math.max(4,x.c.total/max*68):3;
       const isNow=x.y===view.y&&x.m===view.m;
-      return '<button class="tcol'+(isNow?" now":"")+(x.c.n?"":" empty")+'" data-y="'+x.y+'" data-m="'+x.m+'"'
-        +' aria-label="'+monthName(x.y,x.m)+": "+fmtEUR.format(x.c.total)+'">'
-        +'<span class="tval">'+(x.c.total>0?fmtEUR0.format(x.c.total):"")+"</span>"
-        +'<span class="tbar" style="height:'+h+'px"></span>'
+      const barra=x.cierre
+        ? '<span class="tghost" style="height:'+Math.max(h,x.cierre/max*68)+'px"><span class="tbar" style="height:'+h+'px"></span></span>'
+        : '<span class="tbar" style="height:'+h+'px"></span>';
+      return '<button class="tcol'+(isNow?" now":"")+(x.c.n?"":" empty")+(x.cierre?" proy":"")+'" data-y="'+x.y+'" data-m="'+x.m+'"'
+        +' aria-label="'+monthName(x.y,x.m)+": "+fmtEUR.format(x.c.total)+(x.cierre?", a este ritmo unos "+fmtEUR0.format(x.cierre)+" al cierre":"")+'">'
+        +'<span class="tval">'+(x.cierre?'<span class="tproy">~'+fmtEUR0.format(x.cierre)+"</span>":"")
+        +(x.c.total>0?fmtEUR0.format(x.c.total):"")+"</span>"
+        +barra
         +'<span class="tlbl">'+new Date(x.y,x.m,1).toLocaleDateString("es-ES",{month:"short"}).replace(".","")+"</span>"
         +"</button>";
     }).join("");
@@ -2275,23 +2320,25 @@
     // porcentaje: con los tramos de seguros tan pegados, uno o dos cambian el ×
     const nombre=k=>key==="Care"?k+" CARE":(k===1?"1 seguro":k+" seguros");
     const falta=(!isManual&&sig)?faltanCon(nOk,n,sig.desde):null;
-    const subir=falta!=null?"Con <b>"+nombre(falta)+"</b> más, × "+fmtMult.format(sig.mult):"";
+    // "× 0,75" y "sin CARE" no se parten al final de la línea
+    const xNb=m=>"×&nbsp;"+fmtMult.format(m);
+    const subir=falta!=null?"Con <b>"+nombre(falta)+"</b> más, "+xNb(sig.mult):"";
     if(paso===0&&sig){
-      hint.innerHTML=subir||"A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
+      hint.innerHTML=subir||"A <b>"+fmtPct.format(sig.desde-pct)+"&nbsp;pts</b> del "+xNb(sig.mult);
       return;
     }
     if(isManual){
-      hint.innerHTML=top?"¡Tramo alto! Multiplicas <b>× "+fmtMult.format(alto.mult)+"</b>"
-                        :"A <b>"+fmtPct.format(sig.desde-pct)+" pts</b> del × "+fmtMult.format(sig.mult);
+      hint.innerHTML=top?"¡Tramo alto! Multiplicas <b>"+xNb(alto.mult)+"</b>"
+                        :"A <b>"+fmtPct.format(sig.desde-pct)+"&nbsp;pts</b> del "+xNb(sig.mult);
       return;
     }
     // El badge ya dice el multiplicador, así que aquí avisamos del margen que queda
     const svc=key==="Care"?"CARE":"seguro";
     const m=margen(nOk,n,T[paso].desde);
     const extra=subir?'<span class="sig">'+subir+"</span>":"";
-    if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin "+svc+" te baja"+extra; }
-    else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin "+svc+extra; }
-    else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin "+svc+extra;
+    if(m===0){ hint.className="hint warn"; hint.innerHTML="⚠️ La próxima sin&nbsp;"+svc+" te baja"+extra; }
+    else if(m===1){ hint.className="hint warn"; hint.innerHTML="⚠️ Solo <b>1</b> de margen sin&nbsp;"+svc+extra; }
+    else hint.innerHTML="Aguantas <b>"+m+"</b> unidades sin&nbsp;"+svc+extra;
   }
 
   // Lo que aporta una venta al incentivo: cuánto bajaría el total si no existiera.
@@ -2339,28 +2386,32 @@
       const daySum=list.reduce((a,v)=>a+v.amount,0);
       const dt=new Date(d+"T12:00:00");
       const label=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"short"});
-      html+='<div class="day"><div class="dh"><span style="text-transform:capitalize">'+label+'</span><span class="num">'+fmtEUR.format(daySum)+"</span></div>";
+      // Una tarjeta por día y una fila compacta por venta: importe y producto
+      // arriba, etiquetas debajo y lo que te aporta a la derecha
+      html+='<div class="day"><div class="dh"><span style="text-transform:capitalize">'+label+'</span><span class="num">'+fmtEUR.format(daySum)+"</span></div>"
+        +'<div class="dcard">';
       list.forEach(v=>{
         const ap=aporta(c,v);
-        html+='<div class="sale'+(v.id===lastAddedId?" new":"")+'">'
-          +'<div class="amt num">'+fmtEUR.format(v.amount)
-          +'<span class="apo '+(ap<-0.005?"neg":(ap>0.005?"pos":"cero"))+'">'
-          +(ap>0.005?"+":"")+fmtEUR.format(ap)+" para ti</span></div>"
-          +'<div class="meta">'
-          +(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
+        const nota=(v.items&&v.items.length)?v.items.map(x=>x.n).join(" + "):(v.note||"");
+        const chips=(v.score?'<span class="chip score num">'+fmtNum.format(v.score)+" pts</span>":"")
           +(v.acc?'<span class="chip acc">LIBRE</span>':"")
           +(udsDe(v)>1?'<span class="chip uds">'+udsDe(v)+" UNIDADES</span>":"")
           +(carDe(v)?'<span class="chip care">CARE'+(carDe(v)>1?" ×"+carDe(v):"")+"</span>":"")
-          +(segDe(v)?'<span class="chip seg">SEGURO'+(segDe(v)>1?" ×"+segDe(v):"")+"</span>":"")
-          +((v.items&&v.items.length)?'<span class="note">'+esc(v.items.map(x=>x.n).join(" + "))+"</span>"
-              :(v.note?'<span class="note">'+esc(v.note)+"</span>":""))
+          +(segDe(v)?'<span class="chip seg">SEGURO'+(segDe(v)>1?" ×"+segDe(v):"")+"</span>":"");
+        html+='<div class="sale'+(v.id===lastAddedId?" new":"")+'">'
+          +'<div class="sm">'
+          +'<div class="sl1"><span class="amt num">'+fmtEUR.format(v.amount)+"</span>"
+          +(nota?'<span class="note">'+esc(nota)+"</span>":"")+"</div>"
+          +(chips?'<div class="sl2">'+chips+"</div>":"")
           +"</div>"
+          +'<div class="apo num '+(ap<-0.005?"neg":(ap>0.005?"pos":"cero"))+'">'
+          +(ap>0.005?"+":"")+fmtEUR.format(ap)+"<small>para ti</small></div>"
           +'<div class="act">'
           +'<button data-edit="'+esc(v.id)+'" aria-label="Editar">✎</button>'
           +'<button data-del="'+esc(v.id)+'" aria-label="Borrar">✕</button>'
           +"</div></div>";
       });
-      html+="</div>";
+      html+="</div></div>";
     });
     if(ocultas>0) html+='<button class="vermas" id="verMas">Ver las '+ocultas+" ventas restantes</button>";
     else if(verTodas&&c.n>TOPE) html+='<button class="vermas" id="verMenos">Mostrar menos</button>';

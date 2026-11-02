@@ -200,6 +200,14 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Funciona sin conexión una vez instalada (service worker), con icono
   propio en la pantalla de inicio.
 - Gráfica de evolución de los últimos 6 meses (tocar una barra abre ese mes).
+  El mes en curso enseña lo hecho relleno y, en contorno discontinuo, adónde
+  llegaría a este ritmo ("~410 €"), para no compararlo a medias con meses
+  enteros.
+- Lista de ventas compacta: una tarjeta por día y una fila por venta, con el
+  importe y el producto arriba, las etiquetas debajo y lo que aporta a la
+  derecha. En móviles estrechos el producto baja a su propia línea.
+- El desglose del incentivo va en dos líneas: las tres partes de siempre, y
+  debajo, en piezas pequeñas, los multiplicadores de la tienda y el plus.
 - **Modo claro u oscuro** a elección en Ajustes: Automático (sigue al sistema),
   Claro u Oscuro. Se aplica antes del primer pintado, así que la app no abre
   un instante con el tema equivocado, y la barra de estado del móvil también
