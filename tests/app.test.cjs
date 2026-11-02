@@ -39,8 +39,8 @@ before(async () => {
 after(async () => { await browser?.close(); server?.close(); });
 
 // Abre la app con este estado guardado y el reloj en esta fecha
-async function abrir(estado, fecha = "2026-10-15T12:00:00") {
-  const ctx = await browser.newContext({ reducedMotion: "reduce", locale: "es-ES" });
+async function abrir(estado, fecha = "2026-10-15T12:00:00", opciones = {}) {
+  const ctx = await browser.newContext(Object.assign({ reducedMotion: "reduce", locale: "es-ES" }, opciones));
   const page = await ctx.newPage();
   const errores = [];
   page.on("pageerror", e => errores.push(e.message));
@@ -599,5 +599,132 @@ test("Borrar mes quita las ventas pero no el objetivo ni los datos de la tienda"
   assert.equal(g.ventas.length, 0);
   assert.deepEqual(g.overrides["2026-11"], { p4: { obj: 45000, tienda: true } });
   assert.match(await texto(p, "#metaTxt"), /Objetivo 45\.000 €/);
+  await cerrar(p);
+});
+
+/* ===== Objetivo del mes anterior, datos de tienda compartidos, meses cerrados y ejemplo ===== */
+
+const PORTAPAPELES = { permissions: ["clipboard-read", "clipboard-write"] };
+// Sin hoja de compartir, la app copia al portapapeles
+const sinHojaCompartir = p => p.addInitScript(() => { try { Object.defineProperty(navigator, "share", { value: undefined }); } catch (e) {} });
+
+test("en un mes nuevo se ofrece el objetivo del anterior en un toque", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  e.overrides["2026-09"] = { p4: { obj: 50000 } };
+  e.overrides["2026-10"] = { p4: { obj: 60000, tienda: true } };
+  const p = await abrir(e, "2026-11-20T12:00:00");
+  assert.match(await texto(p, "#hP4"), /En octubre era de 60\.000 €/);
+  await p.click("#btnMeta");
+  assert.equal(await texto(p, "#p4Prev"), "Como en octubre: 60.000 €");
+  await p.click("#p4Prev");
+  assert.equal(await p.inputValue("#metaInput"), "60000");
+  assert.ok(await p.locator("#p4Prev").isHidden());
+  // El de la tienda no se arrastra: eso es de cada mes
+  assert.match(await texto(p, "#p4rObj"), /sin marcar/);
+  await p.click("#metaGuardar");
+  assert.deepEqual((await guardado(p)).overrides["2026-11"].p4, { obj: 60000 });
+  await cerrar(p);
+});
+
+test("los datos de la tienda se comparten con un código y otro comercial los pega", async () => {
+  // Quien los comparte
+  const a = await abrir(conP4({ obj: 70000 }, null), "2026-11-20T12:00:00", PORTAPAPELES);
+  await a.click("#btnMeta");
+  await a.click('#p4Tienda [data-v="1"]');
+  await a.click('#p4Del [data-v="grande"]');
+  await a.fill("#p4Resenas", "42"); await a.fill("#p4Llamadas", "82"); await a.fill("#p4Calidad", "8,1"); await a.fill("#p4Repar", "95");
+  await a.evaluate(() => { navigator.share = undefined; });
+  await a.click("#p4Compartir");
+  await a.waitForFunction(() => /copiados/.test(document.getElementById("toastMsg").textContent));
+  const msg = await a.evaluate(() => navigator.clipboard.readText());
+  assert.match(msg, /INC-T1 2026-11 d=g t=1 r=42 l=82 c=8\.1 s=95/);
+  assert.match(msg, /Reseñas: 42 \(delegación grande\)/);
+  assert.doesNotMatch(msg, /70/, "el objetivo de cada uno no se comparte");
+  await cerrar(a);
+  // Quien los recibe, con su propio objetivo
+  const b = await abrir(conP4({ obj: 45000 }, null), "2026-11-20T12:00:00", PORTAPAPELES);
+  await b.evaluate(t => navigator.clipboard.writeText(t), msg);
+  await b.click("#btnMeta");
+  await b.click("#p4Pegar");
+  await b.waitForFunction(() => /cargados/.test(document.getElementById("p4PegarMsg").textContent));
+  assert.ok(await b.locator("#p4PegarTxt").isHidden(), "el cuadro de pegar a mano se va solo");
+  assert.equal(await b.inputValue("#p4Resenas"), "42");
+  assert.equal(await b.inputValue("#p4Calidad"), "8,1");
+  assert.equal(await b.inputValue("#metaInput"), "45000", "su objetivo no se toca");
+  assert.match(await texto(b, "#p4PegarMsg"), /Datos de noviembre cargados/);
+  await b.click("#metaGuardar");
+  const g = await guardado(b);
+  assert.deepEqual(g.overrides["2026-11"].p4, { obj: 45000, tienda: true, resenas: 42, llamadas: 82, calidad: 8.1, repar: 95 });
+  assert.equal(g.delegacion, "grande");
+  // 225 × 1,1 × 1,05 × 1,05 = 272,86875
+  assert.equal(await texto(b, "#totalIncentivo"), "272,86 €");
+  await cerrar(b);
+});
+
+test("sin permiso para leer el portapapeles se pega a mano, y un código de otro mes lleva a ese mes", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  Object.assign(e.overrides, mesAMano("2026-10", 48000, 346, 48, 45).overrides);
+  const p = await abrir(e, "2026-11-20T12:00:00");
+  await p.click("#btnMeta");
+  await p.click("#p4Pegar");
+  assert.ok(!(await p.locator("#p4PegarTxt").isHidden()));
+  await p.fill("#p4PegarTxt", "hola, esto no es nada");
+  assert.equal(await p.inputValue("#p4Resenas"), "");
+  await p.fill("#p4PegarTxt", "🏬 Datos de la tienda · Octubre de 2026\nlo que sea\nINC-T1 2026-10 d=p t=0 s=101");
+  assert.match(await texto(p, "#monthTitle"), /Octubre/);
+  assert.match(await texto(p, "#p4Mes"), /Octubre/);
+  assert.equal(await p.inputValue("#p4Repar"), "101");
+  assert.match(await texto(p, "#p4PegarMsg"), /te he llevado a ese mes/);
+  await p.click("#metaGuardar");
+  const g = await guardado(p);
+  assert.deepEqual(g.overrides["2026-10"].p4, { tienda: false, repar: 101 });
+  assert.equal(g.delegacion, "pequena");
+  assert.equal(g.overrides["2026-11"].p4, undefined);
+  await cerrar(p);
+});
+
+test("un mes cerrado no habla en presente, y el resumen lleva el objetivo y la tienda", async () => {
+  const e = mesAMano("2026-10", 48000, 346, 48, 45);
+  e.overrides["2026-10"].p4 = { obj: 52000, tienda: true, resenas: 45 };
+  Object.assign(e.overrides, mesAMano("2026-11", 48000, 346, 48, 45).overrides);
+  e.overrides["2026-11"].p4 = { obj: 50000, repar: 80 };
+  e.delegacion = "grande";
+  const p = await abrir(e, "2026-11-20T12:00:00", PORTAPAPELES);
+  await sinHojaCompartir(p); await p.reload();
+  assert.match(await texto(p, "#metaTxt"), /te faltan 2\.000 €/);
+  await p.click("#btnShare");
+  await p.waitForFunction(() => /copiado/.test(document.getElementById("toastMsg").textContent));
+  const resumen = blanco(await p.evaluate(() => navigator.clipboard.readText()));
+  assert.match(resumen, /Objetivo 50\.000 € \(faltan 2\.000 €\)/);
+  assert.match(resumen, /Tienda: objetivos × 0,9, SAT × 0,95/);
+  await p.click("#prevM");
+  assert.match(await texto(p, "#metaTxt"), /te quedaste a 4\.000 €/);
+  assert.match(await texto(p, "#hP4"), /Te quedaste a 4\.000 € de tu objetivo/);
+  await p.click("#btnMeta");
+  assert.match(await texto(p, "#p4rObj"), /no llegaste: hiciste 48\.000 €, te quedaste a 4\.000 €/);
+  await cerrar(p);
+});
+
+test("el mes de ejemplo trae objetivo y datos de tienda, y se van al borrarlo", async () => {
+  const p = await abrir({ ventas: [], overrides: {} }, "2026-11-20T12:00:00");
+  await p.click("#btnLista");
+  await p.click("#verEjemplo");
+  assert.match(await texto(p, "#metaTxt"), /Objetivo 55\.000 €/);
+  assert.equal(await p.locator("#p4Chips .p4c.hi").count(), 1, "teléfono × 1,05");
+  assert.match(await texto(p, "#chain"), /TELÉFONO/i);
+  await p.click("#btnQuitarEjemplo");
+  const g = await guardado(p);
+  assert.deepEqual(g.overrides, {});
+  assert.match(await texto(p, "#metaTxt"), /Pon tu objetivo del mes/);
+  await cerrar(p);
+});
+
+test("el ejemplo no pisa el objetivo que ya tenías", async () => {
+  const p = await abrir({ ventas: [], overrides: { "2026-11": { p4: { obj: 70000 } } } }, "2026-11-20T12:00:00");
+  await p.click("#btnLista");
+  await p.click("#verEjemplo");
+  assert.match(await texto(p, "#metaTxt"), /Objetivo 70\.000 €/);
+  await p.click("#btnQuitarEjemplo");
+  assert.deepEqual((await guardado(p)).overrides["2026-11"].p4, { obj: 70000 });
   await cerrar(p);
 });

@@ -79,6 +79,20 @@ El tamaño de la delegación (grande, mediana o pequeña) se elige una vez y val
 para todos los meses. "Borrar mes" quita las ventas pero no el objetivo ni los
 datos de la tienda.
 
+- **El objetivo del mes anterior, en un toque**: al abrir un mes nuevo, el
+  diálogo ofrece "Como en octubre: 60.000 €" y la ficha recuerda cuánto era.
+  Solo el objetivo: lo de la tienda es de cada mes.
+- **Datos de la tienda compartidos**: reseñas, telefonía, reparaciones, el
+  objetivo de la tienda y el tamaño de la delegación son iguales para todo el
+  equipo. "Compartir datos de la tienda" manda un mensaje por WhatsApp con una
+  línea de código (`INC-T1 2026-11 d=g t=1 r=42 l=82 c=8.1 s=95`); los demás
+  tocan "Pegar de un compañero" y se rellenan solos. El objetivo de cada uno no
+  viaja. Si el código es de otro mes, la app lleva a ese mes. Va con código y
+  no con enlace porque en el iPhone un enlace abre Safari, que no comparte los
+  datos con la app instalada.
+- En los meses cerrados se habla en pasado ("te quedaste a 4.000 €"), y el
+  resumen que se comparte lleva el objetivo y los multiplicadores de la tienda.
+
 Cada paso se trunca al céntimo, como en el PDF. Ejemplos verificados contra él:
 
 - 48.000 € → 72 € → × 2 (346 score) = 144 € → × 1,25 × 1,25 = **225,00 €**
@@ -175,6 +189,8 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Progreso hacia el siguiente tramo de facturación, score y attach.
 - Historial por meses (navegación ‹ ›), lista de ventas por día y total
   estimado del año.
+- Mes de ejemplo para ver la app funcionando sin apuntar nada, con objetivo y
+  datos de tienda incluidos. Se borra entero, sin tocar lo que ya tuvieras.
 - Editar ventas, y borrar con botón Deshacer.
 - Compartir el resumen del mes (hoja de compartir de iOS / WhatsApp).
 - Exportar / importar copia de seguridad en JSON.

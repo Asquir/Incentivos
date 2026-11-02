@@ -222,6 +222,12 @@
   .mbody .p4viejo{background:var(--surface2);border-radius:10px;padding:8px 10px}
   .mbody .p4total{margin-top:16px;padding:10px 12px;border-radius:12px;background:var(--surface2);font-size:14px}
   .ov-field input.ancho{width:130px}
+  .p4prev{display:block;margin:-4px 0 8px auto;background:none;border:1px dashed var(--line);border-radius:9px;
+    padding:6px 10px;font:inherit;font-size:13px;font-weight:700;color:var(--gold-ink);cursor:pointer}
+  .p4team{display:flex;gap:8px;margin-top:8px}
+  .p4team .mclose{flex:1;margin:0;padding:10px 6px;font-size:13.5px}
+  #p4PegarTxt{width:100%;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface2);
+    color:var(--ink);font:inherit;font-size:14px;padding:8px 10px;resize:vertical;box-sizing:border-box}
   /* Segunda línea de la ficha de attach: lo que falta para el siguiente tramo */
   .tile .hint .sig{display:block;margin-top:3px;color:var(--muted);font-weight:400}
   .tile .hint .sig b{color:var(--gold-ink)}
@@ -942,6 +948,7 @@
 
     <h4>Objetivos</h4>
     <div class="ov-field"><label for="metaInput">Tu objetivo de facturación (€)</label><input id="metaInput" type="text" inputmode="decimal" placeholder="—" class="ancho"></div>
+    <button type="button" class="p4prev" id="p4Prev" hidden></button>
     <p class="ov-note p4lbl">¿La tienda cumple el suyo?</p>
     <div class="seg seg3" id="p4Tienda">
       <button type="button" data-v="">Sin saber</button>
@@ -970,6 +977,15 @@
     <p class="ov-note p4r" id="p4rSat"></p>
 
     <p class="p4total" id="p4Total"></p>
+
+    <h4>Con el equipo</h4>
+    <p class="ov-note">Los datos de la tienda son los mismos para todos. Uno los comparte por WhatsApp y los demás pegan el mensaje: tu objetivo no se comparte.</p>
+    <div class="p4team">
+      <button type="button" class="mclose" id="p4Compartir">Compartir datos de la tienda</button>
+      <button type="button" class="mclose" id="p4Pegar">Pegar de un compañero</button>
+    </div>
+    <textarea id="p4PegarTxt" rows="3" placeholder="Mantén pulsado aquí y pega el mensaje del compañero" hidden></textarea>
+    <p class="ov-note p4r" id="p4PegarMsg"></p>
   </div>
   <div class="askrow">
     <button class="mclose" id="metaCancelar">Cancelar</button>
@@ -1788,14 +1804,51 @@
     }
     const pc=Math.min(100,c.fact/m*100), hecho=c.fact+1e-9>=m;
     t.className="mtxt"+(hecho?" hecho":"");
+    const cerrado=mesCerrado(view.y,view.m);
     t.innerHTML=hecho
-      ? "🎯 <b>¡Objetivo cumplido!</b> "+fmtEUR0.format(m)+" · llevas "+fmtEUR0.format(c.fact)
-      : "Objetivo "+fmtEUR0.format(m)+" · te faltan <b>"+fmtEUR0.format(Math.ceil(m-c.fact))+"</b>";
+      ? "🎯 <b>¡Objetivo cumplido!</b> "+fmtEUR0.format(m)+" · "+(cerrado?"hiciste ":"llevas ")+fmtEUR0.format(c.fact)
+      : "Objetivo "+fmtEUR0.format(m)+" · "+(cerrado?"te quedaste a ":"te faltan ")+"<b>"+fmtEUR0.format(Math.ceil(m-c.fact))+"</b>";
     bar.hidden=false;
     fill.className=hecho?"hecho":"";
     fill.style.width=Math.max(2,pc)+"%";
   }
   /* ===== Objetivos y tienda (Parte 4), mes a mes ===== */
+  // Un mes ya terminado no se cuenta en presente: "te quedaste a", no "te faltan"
+  const mesCerrado=(y,m)=>y<now.getFullYear()||(y===now.getFullYear()&&m<now.getMonth());
+  const nombreMes=(y,m)=>monthName(y,m).split(" ")[0].toLowerCase();
+  const mesDeKey=mk=>{ const p=mk.split("-"); return {y:+p[0],m:+p[1]-1}; };
+  // El objetivo del último mes que lo tenga, para no escribirlo desde cero
+  function objetivoAnterior(y,m){
+    const mk=monthKey(y,m); let mejor=null;
+    Object.keys(state.overrides||{}).forEach(k=>{
+      const o=(state.overrides[k]||{}).p4;
+      if(k<mk&&o&&!o.demo&&Number(o.obj)>0&&(!mejor||k>mejor)) mejor=k;
+    });
+    return mejor?{mk:mejor,obj:Number(state.overrides[mejor].p4.obj)}:null;
+  }
+  /* Los datos de la tienda viajan en una línea que se puede pegar desde
+     WhatsApp: INC-T1 2026-11 d=g t=1 r=42 l=82 c=8.1 s=95. Solo lo que es de
+     la tienda; el objetivo de cada uno no va. */
+  const COD_DEL={grande:"g",mediana:"m",pequena:"p"};
+  function codigoTienda(mk,X){
+    const d=[];
+    if(X.del) d.push("d="+COD_DEL[X.del]);
+    if(X.tienda!=null) d.push("t="+(X.tienda?1:0));
+    [["r","resenas"],["l","llamadas"],["c","calidad"],["s","repar"]].forEach(([k,f])=>{ if(X[f]!=null) d.push(k+"="+X[f]); });
+    return "INC-T1 "+mk+" "+d.join(" ");
+  }
+  function leerCodigoTienda(txt){
+    const m=/INC-T1\s+(\d{4}-\d{2})((?:\s+[a-z]=\S+)*)/.exec(String(txt||""));
+    if(!m) return null;
+    const out={mk:m[1]}, num=v=>{ const n=Number(v); return isFinite(n)&&n>=0?n:null; };
+    m[2].trim().split(/\s+/).filter(Boolean).forEach(par=>{
+      const [k,v]=par.split("=");
+      if(k==="d"){ const d=Object.keys(COD_DEL).find(x=>COD_DEL[x]===v); if(d) out.del=d; }
+      else if(k==="t"&&(v==="1"||v==="0")) out.tienda=v==="1";
+      else { const f={r:"resenas",l:"llamadas",c:"calidad",s:"repar"}[k]; if(f&&num(v)!=null) out[f]=num(v); }
+    });
+    return Object.keys(out).length>1?out:null;
+  }
   const DEL_TXT={grande:"grande",mediana:"mediana",pequena:"pequeña"};
   let p4Tienda=null, p4Del=null;
   function marcarSeg(id,v){ $(id).querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===v)); }
@@ -1811,6 +1864,10 @@
   // Mientras escribes se ve qué multiplicador sale de cada dato y cómo queda el mes
   function pintarBorradorP4(){
     const c=computeMonth(view.y,view.m), X=borradorP4();
+    // Con el objetivo vacío se ofrece el del último mes, de un toque
+    const ant=X.obj==null?objetivoAnterior(view.y,view.m):null, bp=$("p4Prev");
+    bp.hidden=!ant;
+    if(ant){ const a=mesDeKey(ant.mk); bp.textContent="Como en "+nombreMes(a.y,a.m)+": "+fmtEUR0.format(ant.obj); bp.dataset.v=ant.obj; }
     if(!c.F.p4){
       $("p4rObj").innerHTML=X.obj?(c.fact>=X.obj?"Objetivo cumplido ✓":"Te faltan "+fmtEUR0.format(Math.ceil(X.obj-c.fact))):"";
       ["p4rRes","p4rTel","p4rSat"].forEach(id=>$(id).textContent="");
@@ -1818,8 +1875,11 @@
     }
     const t=computeTotals(c.fact,c.score,c.pctCare,c.pctSeg,c.F,X), r=t.p4;
     const tienda=X.tienda===true?"la tienda sí":(X.tienda===false?"la tienda no":"la tienda sin marcar (cuenta como no)");
+    const falta=fmtEUR0.format(Math.ceil(X.obj-c.fact));
     $("p4rObj").innerHTML=X.obj==null?"Sin objetivo puesto: × 1"
-      :(r.yo?"Tú cumples ("+fmtEUR0.format(c.fact)+")":"Tú aún no: llevas "+fmtEUR0.format(c.fact)+", te faltan "+fmtEUR0.format(Math.ceil(X.obj-c.fact)))
+      :(r.yo?"Tú cumples ("+fmtEUR0.format(c.fact)+")"
+        :(mesCerrado(view.y,view.m)?"Tú no llegaste: hiciste "+fmtEUR0.format(c.fact)+", te quedaste a "+falta
+          :"Tú aún no: llevas "+fmtEUR0.format(c.fact)+", te faltan "+falta))
         +" · "+tienda+" → "+xTxt(r.obj);
     $("p4rRes").innerHTML=X.resenas==null?"Sin datos: × 1"
       :(!X.del?"Elige el tamaño de la delegación para saberlo"
@@ -1830,7 +1890,7 @@
       :(X.llamadas==null&&X.calidad==null?"Sin datos: × 1":"Falta "+(X.llamadas==null?"el % de llamadas":"la nota de calidad")+": × 1 de momento");
     $("p4rSat").innerHTML=X.repar==null?"Sin datos: × 1":"→ "+xTxt(r.sat);
     $("p4Total").hidden=false;
-    $("p4Total").innerHTML="Con estos datos, "+monthName(view.y,view.m).split(" ")[0].toLowerCase()
+    $("p4Total").innerHTML="Con estos datos, "+nombreMes(view.y,view.m)
       +" queda en <b>"+fmtEUR.format(t.total)+"</b>"
       +(Math.abs(t.total-c.total)>=0.005?" ("+(t.total>c.total?"+":"−")+fmtEUR.format(Math.abs(t.total-c.total))+")":"");
   }
@@ -1847,9 +1907,59 @@
     p4Tienda=X.tienda; p4Del=X.del;
     marcarSeg("p4Tienda",X.tienda===true?"1":(X.tienda===false?"0":""));
     marcarSeg("p4Del",X.del||"");
+    $("p4PegarTxt").hidden=true; $("p4PegarTxt").value=""; $("p4PegarMsg").textContent="";
     pintarBorradorP4();
-    document.getElementById("dlgMeta").showModal();
+    const dlg=document.getElementById("dlgMeta");
+    if(!dlg.open) dlg.showModal();
   }
+  $("p4Prev").onclick=()=>{ $("metaInput").value=String($("p4Prev").dataset.v).replace(".",","); pintarBorradorP4(); };
+  // Compartir lo que hay escrito ahora en el diálogo, sea guardado o no
+  $("p4Compartir").onclick=()=>{
+    const mk=monthKey(view.y,view.m), X=borradorP4();
+    if(X.tienda==null&&X.resenas==null&&X.llamadas==null&&X.calidad==null&&X.repar==null){
+      toast("Pon primero algún dato de la tienda"); return;
+    }
+    const partes=[];
+    if(X.tienda!=null) partes.push("Objetivo de tienda: "+(X.tienda?"cumplido":"no cumplido"));
+    if(X.resenas!=null) partes.push("Reseñas: "+X.resenas+(X.del?" (delegación "+DEL_TXT[X.del]+")":""));
+    if(X.llamadas!=null) partes.push("Llamadas atendidas: "+fmtPct.format(X.llamadas)+" %");
+    if(X.calidad!=null) partes.push("Nota de calidad: "+fmtNum.format(X.calidad));
+    if(X.repar!=null) partes.push("Reparaciones: "+fmtPct.format(X.repar)+" %");
+    compartirTexto("🏬 Datos de la tienda · "+monthName(view.y,view.m)+"\n"+partes.join(" · ")
+      +"\nPara cargarlos en Mis Incentivos: copia este mensaje, abre Objetivos y tienda y toca «Pegar de un compañero».\n"
+      +codigoTienda(mk,X),"Datos de la tienda copiados ✓");
+  };
+  // Rellena el diálogo con lo que trae el código. Si es de otro mes, se va a ese mes.
+  function aplicarCodigoTienda(txt){
+    const d=leerCodigoTienda(txt), msg=$("p4PegarMsg");
+    if(!d){ msg.textContent="No encuentro los datos de la tienda en ese texto."; return false; }
+    const {y,m}=mesDeKey(d.mk);
+    const otroMes=monthKey(view.y,view.m)!==d.mk;
+    if(otroMes){ view={y,m}; verTodas=false; resetForm(); render(); abrirP4(); }
+    const f=v=>String(v).replace(".",",");
+    if(d.resenas!=null) $("p4Resenas").value=f(d.resenas);
+    if(d.llamadas!=null) $("p4Llamadas").value=f(d.llamadas);
+    if(d.calidad!=null) $("p4Calidad").value=f(d.calidad);
+    if(d.repar!=null) $("p4Repar").value=f(d.repar);
+    if(d.tienda!=null){ p4Tienda=d.tienda; marcarSeg("p4Tienda",d.tienda?"1":"0"); }
+    if(d.del){ p4Del=d.del; marcarSeg("p4Del",d.del); }
+    $("p4PegarTxt").hidden=true; $("p4PegarTxt").value="";
+    $("p4PegarMsg").textContent="Datos de "+nombreMes(y,m)+" cargados"+(otroMes?" (te he llevado a ese mes)":"")+". Revísalos y pulsa Guardar.";
+    pintarBorradorP4();
+    return true;
+  }
+  $("p4Pegar").onclick=async ()=>{
+    // El cuadro para pegar a mano sale ya: leer el portapapeles pide permiso,
+    // no siempre se puede y en el iPhone hay que confirmarlo. Si se puede, se
+    // rellena solo y el cuadro se va.
+    const caja=$("p4PegarTxt");
+    caja.hidden=false; $("p4PegarMsg").textContent="";
+    caja.focus();
+    let txt="";
+    try{ txt=await navigator.clipboard.readText(); }catch(e){}
+    if(txt&&leerCodigoTienda(txt)) aplicarCodigoTienda(txt);
+  };
+  $("p4PegarTxt").addEventListener("input",()=>{ if(leerCodigoTienda($("p4PegarTxt").value)) aplicarCodigoTienda($("p4PegarTxt").value); });
   $("btnMeta").onclick=abrirP4;
   $("editP4").onclick=e=>{ e.stopPropagation(); abrirP4(); };
   $("tileP4").onclick=abrirP4;
@@ -1895,12 +2005,15 @@
     $("editP4").classList.toggle("set",!nada);
     const h=$("hP4");
     if(X.obj==null){
-      h.innerHTML=nada?"Toca para poner tu objetivo y los datos de la tienda. Sin datos cuenta × 1."
-        :"Sin tu objetivo puesto, el de objetivos cuenta × 1.";
+      const ant=objetivoAnterior(view.y,view.m), a=ant&&mesDeKey(ant.mk);
+      h.innerHTML=(nada?"Toca para poner tu objetivo y los datos de la tienda. Sin datos cuenta × 1."
+        :"Sin tu objetivo puesto, el de objetivos cuenta × 1.")
+        +(ant?" En "+nombreMes(a.y,a.m)+" era de <b>"+fmtEUR0.format(ant.obj)+"</b>.":"");
       return;
     }
     const tienda=X.tienda===true?"tienda ✓":(X.tienda===false?"tienda ✗":"tienda sin marcar");
-    h.innerHTML=(r.yo?"Tu objetivo ✓":"Te faltan <b>"+fmtEUR0.format(Math.ceil(X.obj-c.fact))+"</b> para tu objetivo")+" · "+tienda;
+    const falta="<b>"+fmtEUR0.format(Math.ceil(X.obj-c.fact))+"</b>";
+    h.innerHTML=(r.yo?"Tu objetivo ✓":(mesCerrado(view.y,view.m)?"Te quedaste a "+falta+" de tu objetivo":"Te faltan "+falta+" para tu objetivo"))+" · "+tienda;
   }
 
   /* ===== Mes de ejemplo, para ver la app funcionando sin apuntar nada ===== */
@@ -1937,12 +2050,25 @@
       for(let k=0;k<4;k++) nuevas.push(v(mesAtras(m,4+k*6), imp/4, sc/4, k<3, k<2, false, []));
     });
     state.ventas=state.ventas.concat(nuevas);
+    // Y el objetivo y los datos de la tienda, para que se vea la Parte 4.
+    // Va marcado como ejemplo: si ya tenías datos ese mes, no se tocan.
+    const mkHoy=monthKey(hoy.getFullYear(),hoy.getMonth());
+    const oHoy=state.overrides[mkHoy]=state.overrides[mkHoy]||{};
+    if(!oHoy.p4) oHoy.p4={obj:55000,tienda:true,llamadas:83,calidad:8,repar:96,demo:true};
     save(); render();
     window.scrollTo({top:0,behavior:reducedMotion()?"auto":"smooth"});
     toast("Ejemplo cargado · bórralo cuando quieras");
   }
+  // Los datos de la Parte 4 del ejemplo no son tuyos: se van con él
+  function quitarP4Ejemplo(){
+    Object.keys(state.overrides||{}).forEach(k=>{
+      const o=state.overrides[k];
+      if(o&&o.p4&&o.p4.demo){ delete o.p4; if(!Object.keys(o).length) delete state.overrides[k]; }
+    });
+  }
   function quitarEjemplo(){
     state.ventas=state.ventas.filter(x=>!x.demo);
+    quitarP4Ejemplo();
     save(); render();
     toast("Ejemplo borrado ✓");
   }
@@ -2868,20 +2994,34 @@
   };
 
   /* ===== Compartir resumen ===== */
-  $("btnShare").onclick=async ()=>{
-    const c=computeMonth(view.y,view.m);
-    const txt="📊 "+monthName(view.y,view.m)
-      +" · Facturación "+fmtEUR0.format(c.fact)
-      +" · Score "+fmtNum.format(c.score)
-      +(c.pctCare!=null?" · CARE "+fmtPct.format(c.pctCare)+"%":"")
-      +(c.pctSeg!=null?" · Seguros "+fmtPct.format(c.pctSeg)+"%":"")
-      +" · Incentivo estimado: "+fmtEUR.format(c.total);
+  // Hoja de compartir del móvil, o al portapapeles si no la hay
+  async function compartirTexto(txt,copiado){
     if(navigator.share){
       try{ await navigator.share({text:txt}); return; }
       catch(e){ if(e&&e.name==="AbortError") return; }
     }
-    try{ await navigator.clipboard.writeText(txt); toast("Resumen copiado ✓"); }
+    try{ await navigator.clipboard.writeText(txt); toast(copiado); }
     catch(e){ toast("No se pudo compartir"); }
+  }
+  $("btnShare").onclick=()=>{
+    const c=computeMonth(view.y,view.m), X=c.X||{};
+    let obj="";
+    if(X.obj){
+      const falta=fmtEUR0.format(Math.ceil(X.obj-c.fact));
+      obj=" · Objetivo "+fmtEUR0.format(X.obj)+(c.fact+1e-9>=X.obj?" ✓":(mesCerrado(view.y,view.m)?" (a "+falta+")":" (faltan "+falta+")"));
+    }
+    // De la Parte 4, solo los que cambian algo, igual que en el desglose
+    const p4=c.p4?[["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SAT"]]
+      .filter(([k])=>c.p4[k]!=null&&c.p4[k]!==1).map(([k,l])=>l+" × "+fmtMult.format(c.p4[k])):[];
+    const txt="📊 "+monthName(view.y,view.m)
+      +" · Facturación "+fmtEUR0.format(c.fact)
+      +obj
+      +" · Score "+fmtNum.format(c.score)
+      +(c.pctCare!=null?" · CARE "+fmtPct.format(c.pctCare)+"%":"")
+      +(c.pctSeg!=null?" · Seguros "+fmtPct.format(c.pctSeg)+"%":"")
+      +(p4.length?" · Tienda: "+p4.join(", "):"")
+      +" · Incentivo estimado: "+fmtEUR.format(c.total);
+    compartirTexto(txt,"Resumen copiado ✓");
   };
 
   /* ===== Ajustes de la fórmula ===== */
@@ -3067,7 +3207,7 @@
       // El objetivo y los datos de la tienda no son apuntes tuyos: se quedan
       const p4=(state.overrides[mk]||{}).p4;
       delete state.overrides[mk];
-      if(p4) state.overrides[mk]={p4};
+      if(p4&&!p4.demo) state.overrides[mk]={p4};
       save(); resetForm(); render();
       toast("Mes borrado","Deshacer",()=>restore(snap),8000);
     }
