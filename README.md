@@ -15,7 +15,8 @@ El incentivo se calcula en 4 partes encadenadas (la 4ª, pendiente de la
 empresa, vale × 1 de momento):
 
 **Parte 1 · Cuantitativa (facturación)** — la facturación del mes × un
-porcentaje según tramo:
+porcentaje según tramo. El PDF habla de "Gross margin", pero sus ejemplos usan
+la facturación y la empresa ha **confirmado** que es sobre la facturación:
 
 | Nivel | Facturación | % |
 |---|---|---|
@@ -69,11 +70,13 @@ se pone cuenta × 1.
 | Reparaciones servicio técnico | < 90 % | 90 – 100 % | ≥ 100 % |
 
 > Notas: el PDF pone "menos de 30" y "entre 31 y 40", así que 30 justas
-> quedarían sin tramo; la app las cuenta en el de abajo (lo mismo con 20 y 10).
+> quedaban sin tramo. **Confirmado por la empresa**: 30 reseñas es × 0,95, y la
+> app aplica lo mismo a 20 en las medianas y a 10 en las pequeñas.
+> El objetivo individual es una cifra de facturación en euros (**confirmado**):
+> se cumple en cuanto la facturación del mes lo alcanza, y a mitad de mes el
+> incentivo se calcula como si el mes acabara hoy, igual que los tramos.
 > El objetivo de la tienda sin marcar cuenta como no cumplido, para no prometer
-> de más. Tu objetivo se cumple en cuanto la facturación del mes lo alcanza: a
-> mitad de mes el incentivo se calcula como si el mes acabara hoy, igual que los
-> tramos.
+> de más.
 
 El tamaño de la delegación (grande, mediana o pequeña) se elige una vez y vale
 para todos los meses. "Borrar mes" quita las ventas pero no el objetivo ni los
