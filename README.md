@@ -53,8 +53,31 @@ attach de CARE y otro por el de SEGUROS. Cada uno tiene sus propios cortes:
 > Nota: cada tramo empieza en su porcentaje (el 45 % exacto de CARE ya es
 > × 1,25, el 35 % ya no es "<35"), igual que hacía el ejemplo del email.
 
-**Parte 4 · Multiplicadores colectivos** — pendiente de definir por la empresa
-(telefonía, reseñas, servicio técnico). Se puede poner en Ajustes; vale 1.
+**Parte 4 · Multiplicadores colectivos** — cuatro multiplicadores más sobre
+el resultado de las tres primeras partes. Los datos se ponen **mes a mes** en
+la ficha *Objetivos y tienda* (o tocando *Pon tu objetivo del mes* bajo el
+incentivo), y se pueden actualizar cuando llegue el dato definitivo. Lo que no
+se pone cuenta × 1.
+
+| Multiplicador | × 0,95 (× 0,9) | × 1 | × 1,05 (× 1,1) |
+|---|---|---|---|
+| Objetivos (tuyo de facturación y de tienda) | ninguno: × 0,9 | solo uno | los dos: × 1,1 |
+| Reseñas, delegación grande | hasta 30 | 31 – 40 | más de 40 |
+| Reseñas, delegación mediana | hasta 20 | 21 – 30 | más de 30 |
+| Reseñas, delegación pequeña | hasta 10 | 11 – 20 | más de 20 |
+| Telefonía | < 65 % atendidas o nota < 7 | 65 – 80 %, nota ≥ 7 | ≥ 80 %, nota ≥ 7 |
+| Reparaciones servicio técnico | < 90 % | 90 – 100 % | ≥ 100 % |
+
+> Notas: el PDF pone "menos de 30" y "entre 31 y 40", así que 30 justas
+> quedarían sin tramo; la app las cuenta en el de abajo (lo mismo con 20 y 10).
+> El objetivo de la tienda sin marcar cuenta como no cumplido, para no prometer
+> de más. Tu objetivo se cumple en cuanto la facturación del mes lo alcanza: a
+> mitad de mes el incentivo se calcula como si el mes acabara hoy, igual que los
+> tramos.
+
+El tamaño de la delegación (grande, mediana o pequeña) se elige una vez y vale
+para todos los meses. "Borrar mes" quita las ventas pero no el objetivo ni los
+datos de la tienda.
 
 Cada paso se trunca al céntimo, como en el PDF. Ejemplos verificados contra él:
 
@@ -123,6 +146,10 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 - Media diaria de facturación bajo el incentivo, en cualquier mes (también en
   los cerrados). Con un objetivo puesto, al lado aparece el ritmo que haría
   falta, así se ve de un vistazo lo que se lleva y lo que falta.
+- **Objetivo del mes**: el de facturación que pone la empresa, uno por mes.
+  Bajo el incentivo se ve cuánto falta con una barra, el ritmo diario que hace
+  falta para llegar, y la línea de movimientos dice cuánto ganas al cumplirlo
+  (cuenta en la Parte 4). Lo celebra al cruzarlo.
 - Proyección a fin de mes: "a este ritmo acabarás el mes con ~X €". Cuenta
   **días de trabajo, no de calendario**: en Ajustes se indica cuántos días se
   libran a la semana (2 por defecto) y tanto la proyección como el "€ al día"
@@ -160,8 +187,9 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   lo respeta.
 - Ajustes con las tablas de la fórmula editables, por si la empresa las
   cambia (los tramos de attach de CARE y de seguros, cada uno por su lado),
-  el mes desde el que cuentan, y el multiplicador colectivo de la Parte 4
-  (pendiente de aplicar por la empresa; se deja en 1 hasta que lo comuniquen).
+  y el mes desde el que cuentan. Las tablas de la Parte 4 van en la fórmula y
+  se ven en "Cómo se calcula"; los datos de cada mes, en la ficha *Objetivos y
+  tienda*.
   "Valores del PDF" rellena las tablas originales y no cuenta hasta Guardar.
 
 ## Aviso importante sobre los datos
