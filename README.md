@@ -67,7 +67,7 @@ se pone cuenta × 1.
 | Reseñas, delegación mediana | hasta 20 | 21 – 30 | más de 30 |
 | Reseñas, delegación pequeña | hasta 10 | 11 – 20 | más de 20 |
 | Telefonía | < 65 % atendidas o nota < 7 | 65 – 80 %, nota ≥ 7 | ≥ 80 %, nota ≥ 7 |
-| Reparaciones servicio técnico | < 90 % | 90 – 100 % | ≥ 100 % |
+| Reparaciones servicio técnico (SVT) | < 90 % | 90 – 100 % | ≥ 100 % |
 
 > Notas: el PDF pone "menos de 30" y "entre 31 y 40", así que 30 justas
 > quedaban sin tramo. **Confirmado por la empresa**: 30 reseñas es × 0,95, y la
@@ -156,10 +156,13 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   cálculo de los porcentajes de attach (no los diluyen) y no admiten
   CARE ni seguro.
 - Incentivo estimado siempre visible, con el desglose del cálculo.
-- **Plus por responsabilidad**: un fijo mensual que se pone en Ajustes y se
-  suma al incentivo (no multiplica). Sale en el desglose con un `+` delante.
-  Como se suma igual todos los meses, no altera lo que aporta cada venta ni lo
-  que se ganaría subiendo de tramo, que son diferencias.
+- **Plus por responsabilidad**, **mes a mes** (un mes 150 €, otro 100 €): se
+  pone en Ajustes, que enseña el del mes en vista y ofrece de un toque el del
+  último mes que lo tenga. Se suma al incentivo de ese mes (no multiplica) y
+  sale en el desglose con un `+` delante. No altera lo que aporta cada venta ni
+  lo que se ganaría subiendo de tramo, que son diferencias dentro del mes.
+  El plus que antes era uno para todos los meses pasó a cada mes con datos,
+  hasta el actual, para que el historial no cambiara.
 - Media diaria de facturación bajo el incentivo, en cualquier mes (también en
   los cerrados). Con un objetivo puesto, al lado aparece el ritmo que haría
   falta, así se ve de un vistazo lo que se lleva y lo que falta.
@@ -196,7 +199,11 @@ campo vacío se vuelve a la suma limpia de los apuntes.
   datos de tienda incluidos. Se borra entero, sin tocar lo que ya tuvieras.
 - Editar ventas, y borrar con botón Deshacer.
 - Compartir el resumen del mes (hoja de compartir de iOS / WhatsApp).
-- Exportar / importar copia de seguridad en JSON.
+- **Guardar copia** abre la hoja de compartir del móvil con el archivo de la
+  copia (JSON): se manda uno mismo por WhatsApp o correo, o se guarda en
+  iCloud. En el ordenador se descarga. Importar la recupera.
+- **Novedades**: tras una actualización con cambios que contar, quien ya usaba
+  la app los ve una vez al abrirla. A quien la estrena no se le enseñan.
 - Funciona sin conexión una vez instalada (service worker), con icono
   propio en la pantalla de inicio.
 - Gráfica de evolución de los últimos 6 meses (tocar una barra abre ese mes).
@@ -227,8 +234,8 @@ campo vacío se vuelve a la suma limpia de los apuntes.
 
 Safari borra el almacenamiento de una web tras varios días sin visitarla.
 **Instalada en la pantalla de inicio esto no ocurre**, así que la app muestra
-un aviso recordándolo mientras no esté instalada, y recuerda hacer una copia
-si hace más de 30 días de la última.
+un aviso recordándolo mientras no esté instalada, y recuerda guardar una copia
+si hace más de dos semanas de la última.
 
 ## Publicar gratis para todo el equipo (GitHub Pages)
 

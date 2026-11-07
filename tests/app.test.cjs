@@ -40,11 +40,14 @@ after(async () => { await browser?.close(); server?.close(); });
 
 // Abre la app con este estado guardado y el reloj en esta fecha
 async function abrir(estado, fecha = "2026-10-15T12:00:00", opciones = {}) {
-  const ctx = await browser.newContext(Object.assign({ reducedMotion: "reduce", locale: "es-ES" }, opciones));
+  const { novedades, ...ctxOpts } = opciones;
+  const ctx = await browser.newContext(Object.assign({ reducedMotion: "reduce", locale: "es-ES" }, ctxOpts));
   const page = await ctx.newPage();
   const errores = [];
   page.on("pageerror", e => errores.push(e.message));
   await page.clock.setFixedTime(new Date(fecha));
+  // El aviso de novedades sale una vez y taparía los demás tests: se da por visto
+  if (!novedades) await page.addInitScript(() => { try { localStorage.setItem("incentivos:novedades", "9999-99"); } catch (e) {} });
   if (estado !== undefined) {
     await page.addInitScript(([k, v]) => {
       // Solo la primera vez: al recargar debe quedar lo que guardó la app
@@ -440,7 +443,7 @@ test("Parte 4: los cuatro a la vez multiplican el resultado de las tres primeras
   // 225 × 1,1 × 1,05 × 1,05 × 1,05 = 286,5121875
   assert.equal(await texto(p, "#totalIncentivo"), "286,51 €");
   const chain = await texto(p, "#chain");
-  for (const l of ["OBJETIVOS", "RESEÑAS", "TELÉFONO", "SAT"]) assert.match(chain.toUpperCase(), new RegExp(l));
+  for (const l of ["OBJETIVOS", "RESEÑAS", "TELÉFONO", "SVT"]) assert.match(chain.toUpperCase(), new RegExp(l));
   assert.equal(await p.locator("#p4Chips .p4c.hi").count(), 4);
   await cerrar(p);
 });
@@ -705,7 +708,7 @@ test("un mes cerrado no habla en presente, y el resumen lleva el objetivo y la t
   await p.waitForFunction(() => /copiado/.test(document.getElementById("toastMsg").textContent));
   const resumen = blanco(await p.evaluate(() => navigator.clipboard.readText()));
   assert.match(resumen, /Objetivo 50\.000 € \(faltan 2\.000 €\)/);
-  assert.match(resumen, /Tienda: objetivos × 0,9, SAT × 0,95/);
+  assert.match(resumen, /Tienda: objetivos × 0,9, SVT × 0,95/);
   await p.click("#prevM");
   assert.match(await texto(p, "#metaTxt"), /te quedaste a 4\.000 €/);
   assert.match(await texto(p, "#hP4"), /Te quedaste a 4\.000 € de tu objetivo/);
@@ -774,4 +777,122 @@ test("el ✎ de facturación se puede cancelar sin tocar nada", async () => {
   assert.ok(!(await p.locator("#dlgOverride").isVisible()));
   assert.equal(await texto(p, "#totalIncentivo"), "225,00 €");
   await cerrar(p);
+});
+
+/* ===== Plus mes a mes, copia por la hoja de compartir y novedades ===== */
+
+const ventaSuelta = (id, date) => ({ id, date, ts: 1, amount: 0, score: 0, care: false, seguro: false, acc: true, items: [] });
+
+test("el plus que había para todos los meses pasa a cada mes con datos, y desde ahí va mes a mes", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  Object.assign(e.overrides, mesAMano("2026-10", 48000, 346, 48, 45).overrides);
+  e.overrides["2026-12"] = { p4: { obj: 50000 } }; // un mes futuro no se lleva el plus
+  e.ventas = [ventaSuelta("a", "2026-09-10")];
+  e.plus = 100;
+  const p = await abrir(e, "2026-11-20T12:00:00");
+  const g = await guardado(p);
+  assert.equal(g.plus, undefined);
+  assert.equal(g.overrides["2026-09"].plus, 100);
+  assert.equal(g.overrides["2026-10"].plus, 100);
+  assert.equal(g.overrides["2026-11"].plus, 100);
+  assert.equal(g.overrides["2026-12"].plus, undefined);
+  assert.equal(await texto(p, "#totalIncentivo"), "325,00 €", "225 + 100, como antes");
+  // Noviembre pasa a 150 y octubre se queda en 100
+  await p.click("#btnCfg");
+  assert.match(await texto(p, "#cfgPlusLbl"), /Noviembre de 2026/);
+  assert.equal(await p.inputValue("#cfgPlus"), "100");
+  await p.fill("#cfgPlus", "150");
+  await p.click("#cfgSave");
+  assert.equal(await texto(p, "#totalIncentivo"), "375,00 €");
+  assert.match(await texto(p, "#chain"), /\+ 150 €/);
+  await p.click("#prevM");
+  assert.equal(await texto(p, "#totalIncentivo"), "325,00 €");
+  await cerrar(p);
+});
+
+test("en un mes sin plus se ofrece el del anterior de un toque", async () => {
+  const e = mesAMano("2026-12", 48000, 346, 48, 45);
+  e.overrides["2026-10"] = { plus: 100 };
+  e.overrides["2026-11"] = { plus: 150 };
+  const p = await abrir(e, "2026-12-10T12:00:00");
+  assert.equal(await texto(p, "#totalIncentivo"), "225,00 €", "diciembre aún no tiene plus");
+  await p.click("#btnCfg");
+  assert.equal(await p.inputValue("#cfgPlus"), "");
+  assert.equal(await texto(p, "#cfgPlusPrev"), "Como en noviembre: 150 €");
+  await p.click("#cfgPlusPrev");
+  assert.equal(await p.inputValue("#cfgPlus"), "150");
+  assert.ok(await p.locator("#cfgPlusPrev").isHidden());
+  await p.click("#cfgSave");
+  assert.equal(await texto(p, "#totalIncentivo"), "375,00 €");
+  // Borrar mes quita las ventas, no el plus
+  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem("incentivos:v1")); s.ventas = [{ id: "z", date: "2026-12-03", ts: 1, amount: 10, score: 0, care: false, seguro: false, acc: true, items: [] }]; localStorage.setItem("incentivos:v1", JSON.stringify(s)); });
+  await p.reload();
+  await p.click("#btnWipe"); await p.click("#askYes");
+  assert.equal((await guardado(p)).overrides["2026-12"].plus, 150);
+  await cerrar(p);
+});
+
+test("una copia de antes, con el plus de siempre, se reparte por meses al importarla", async () => {
+  const p = await abrir(undefined, "2026-11-20T12:00:00");
+  const copia = mesAMano("2026-11", 48000, 346, 48, 45);
+  copia.ventas = [ventaSuelta("a", "2026-11-10"), ventaSuelta("b", "2026-08-10")];
+  copia.plus = 80;
+  await p.setInputFiles("#fileImport", { name: "c.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(copia)) });
+  await p.click("#askYes");
+  await p.waitForFunction(() => document.getElementById("toastMsg").textContent.includes("importada"));
+  const g = await guardado(p);
+  assert.equal(g.plus, undefined);
+  assert.equal(g.overrides["2026-08"].plus, 80);
+  assert.equal(g.overrides["2026-11"].plus, 80);
+  assert.equal(await texto(p, "#totalIncentivo"), "305,00 €");
+  await cerrar(p);
+});
+
+test("Guardar copia abre la hoja de compartir con el archivo", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  e.ventas = [ventaSuelta("a", "2026-11-10")];
+  const p = await abrir(e, "2026-11-20T12:00:00");
+  await p.evaluate(() => {
+    navigator.canShare = d => !!(d && d.files && d.files.length);
+    navigator.share = async d => { window.__compartido = { nombre: d.files[0].name, tipo: d.files[0].type, texto: await d.files[0].text() }; };
+  });
+  await p.click("#btnExport");
+  await p.waitForFunction(() => window.__compartido);
+  const c = await p.evaluate(() => window.__compartido);
+  assert.equal(c.nombre, "incentivos-2026-11-20.json");
+  assert.equal(c.tipo, "application/json");
+  assert.equal(JSON.parse(c.texto).ventas.length, 1);
+  assert.equal((await guardado(p)).lastExport, "2026-11-20");
+  // Si se cierra la hoja sin mandar nada, no cuenta como copia hecha
+  await p.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("incentivos:v1")); delete s.lastExport; localStorage.setItem("incentivos:v1", JSON.stringify(s));
+  });
+  await p.reload();
+  await p.evaluate(() => {
+    navigator.canShare = () => true;
+    navigator.share = async () => { throw new DOMException("cancelado", "AbortError"); };
+  });
+  await p.click("#btnExport");
+  await p.waitForTimeout(200);
+  assert.equal((await guardado(p)).lastExport, undefined);
+  await cerrar(p);
+});
+
+test("las novedades salen una vez a quien ya usaba la app, y a quien la estrena no", async () => {
+  const e = mesAMano("2026-11", 48000, 346, 48, 45);
+  e.ventas = [ventaSuelta("a", "2026-11-10")];
+  const p = await abrir(e, "2026-11-20T12:00:00", { novedades: true });
+  await p.waitForSelector("#dlgNovedades[open]");
+  assert.match(await texto(p, "#dlgNovedades"), /plus por responsabilidad, mes a mes/i);
+  await p.click("#novOk");
+  assert.ok(!(await p.locator("#dlgNovedades").isVisible()));
+  await p.reload();
+  await p.waitForTimeout(800);
+  assert.ok(!(await p.locator("#dlgNovedades").isVisible()), "solo una vez");
+  await cerrar(p);
+  const q = await abrir({ ventas: [], overrides: {} }, "2026-11-20T12:00:00", { novedades: true });
+  await q.waitForTimeout(800);
+  assert.ok(!(await q.locator("#dlgNovedades").isVisible()), "a quien estrena la app no");
+  assert.equal(await q.evaluate(() => localStorage.getItem("incentivos:novedades")), "2026-11");
+  await cerrar(q);
 });

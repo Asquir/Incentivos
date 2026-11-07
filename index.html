@@ -546,6 +546,10 @@
   .mio button{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
   .danger{color:var(--bad) !important}
   .askrow{display:flex;gap:8px;padding:0 20px 20px}
+  .nov{list-style:none;margin:6px 0 0;padding:0}
+  .nov li{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+  .nov li:first-child{border-top:none}
+  .nov li>span{font-size:19px;line-height:1.2;flex:none}
   .askrow .mclose{width:auto;flex:1;margin:0}
   .askrow .yes{background:var(--gold);border-color:var(--gold);color:#14222B}
   .askrow .yes.danger-btn{background:var(--bad);border-color:var(--bad);color:#fff}
@@ -744,7 +748,7 @@
   <p class="yeartotal" id="yearTotal"></p>
 
   <div class="toolbar">
-    <button id="btnExport">Exportar copia</button>
+    <button id="btnExport">Guardar copia</button>
     <button id="btnImport">Importar</button>
     <button id="btnWipe" class="danger">Borrar mes</button>
   </div>
@@ -833,8 +837,8 @@
     <p class="ov-note">Ejemplo librando dos días: el día 10 llevas 20.000 € en 7 días currados → 2.857 €/día → 22 días de trabajo en el mes → 62.857 € estimados. Aparece a partir del séptimo día del mes, porque antes hay pocos datos y la cifra se dispara.</p>
 
     <h4>Plus por responsabilidad</h4>
-    <p>Si en la tienda tienes una responsabilidad que paga un fijo al mes, ponlo en <b>Ajustes → Plus por responsabilidad</b> y se suma al incentivo. Aparece como una pieza más del desglose, con un <b>+</b> delante en vez de un ×, porque se suma al final: no multiplica ni depende de los tramos.</p>
-    <p class="ov-note">Al sumarse a todos los meses por igual, no cambia lo que aporta cada venta ni lo que ganarías subiendo de tramo: esas cifras son diferencias y el plus se va en la resta.</p>
+    <p>Si en la tienda tienes una responsabilidad que te paga un plus, ponlo en <b>Ajustes → Plus por responsabilidad</b> y se suma al incentivo de ese mes. Aparece como una pieza más del desglose, con un <b>+</b> delante en vez de un ×, porque se suma al final: no multiplica ni depende de los tramos.</p>
+    <p class="ov-note">Cambia de un mes a otro, así que se guarda mes a mes: el de noviembre no es el de octubre, y al abrir un mes nuevo Ajustes te ofrece el del anterior de un toque. Como se suma al final, no cambia lo que aporta cada venta ni lo que ganarías subiendo de tramo: esas cifras son diferencias dentro del mes y el plus se va en la resta.</p>
 
     <h4>Parte 4 · Multiplicadores colectivos</h4>
     <p>Cuatro multiplicadores más sobre el resultado de las tres primeras partes, según el trabajo de toda la tienda y tus objetivos. Los datos se ponen cada mes en la ficha <b>Objetivos y tienda</b>, y los puedes cambiar cuando llegue el dato definitivo. Lo que no pongas cuenta × 1.</p>
@@ -883,8 +887,9 @@
     <p class="ov-note">Automático sigue al iPhone: claro de día y oscuro de noche.</p>
 
     <h4>Plus por responsabilidad</h4>
-    <p class="ov-note">Lo que cobras al mes por una responsabilidad de la tienda. Se suma al incentivo, no multiplica.</p>
-    <div class="ov-field"><label for="cfgPlus">Plus al mes (€)</label><input id="cfgPlus" inputmode="decimal" placeholder="0"></div>
+    <p class="ov-note">Lo que cobras por una responsabilidad de la tienda. Cambia de un mes a otro, así que se guarda mes a mes. Se suma al incentivo, no multiplica.</p>
+    <div class="ov-field"><label for="cfgPlus" id="cfgPlusLbl">Plus del mes (€)</label><input id="cfgPlus" inputmode="decimal" placeholder="0"></div>
+    <button type="button" class="p4prev" id="cfgPlusPrev" hidden></button>
 
     <h4>IVA</h4>
     <p class="ov-note">A facturación va el precio sin IVA. Los seguros (AppleCare, Insurama) no llevan, así que esos cuentan enteros. Déjalo en 0 si tu tienda lo cuenta con IVA.</p>
@@ -1011,7 +1016,7 @@
     <div class="ov-field"><label for="p4Calidad">Nota de calidad</label><input id="p4Calidad" type="text" inputmode="decimal" placeholder="—"></div>
     <p class="ov-note p4r" id="p4rTel"></p>
 
-    <h4>Reparaciones servicio técnico</h4>
+    <h4>Reparaciones servicio técnico (SVT)</h4>
     <div class="ov-field"><label for="p4Repar">Reparaciones (%)</label><input id="p4Repar" type="text" inputmode="decimal" placeholder="—"></div>
     <p class="ov-note p4r" id="p4rSat"></p>
 
@@ -1029,6 +1034,24 @@
   <div class="askrow">
     <button class="mclose" id="metaCancelar">Cancelar</button>
     <button class="mclose yes" id="metaGuardar">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgNovedades">
+  <div class="mbody">
+    <h3>Novedades</h3>
+    <p class="sub">Lo que ha cambiado en la app desde la última vez.</p>
+    <ul class="nov">
+      <li><span>🧮</span><div><b>La fórmula piloto.</b> Desde octubre, con las tablas del PDF. Los meses de antes siguen con la del email, que es la que se cobró.</div></li>
+      <li><span>🎯</span><div><b>Tu objetivo del mes y los datos de la tienda.</b> Reseñas, telefonía y SVT, en la ficha <b>Objetivos y tienda</b>. Cuentan en el incentivo.</div></li>
+      <li><span>🤝</span><div><b>Datos de la tienda, compartidos.</b> Uno los manda por WhatsApp y los demás los pegan. Tu objetivo no se comparte.</div></li>
+      <li><span>💶</span><div><b>El plus por responsabilidad, mes a mes.</b> En Ajustes, cada mes el suyo.</div></li>
+      <li><span>💾</span><div><b>Copia de seguridad en un toque.</b> <b>Guardar copia</b>, abajo del todo, te la deja mandar por WhatsApp o correo, o guardarla en iCloud.</div></li>
+      <li><span>📊</span><div><b>Más fácil de leer.</b> La lista de ventas es más compacta y la gráfica enseña adónde llegas a fin de mes.</div></li>
+    </ul>
+  </div>
+  <div class="askrow">
+    <button class="mclose yes" id="novOk">Entendido</button>
   </div>
 </dialog>
 
@@ -1354,10 +1377,32 @@
   const carDe=v=>(v.nc!=null)?Math.max(0,v.nc):(v.care?1:0);
   const segDe=v=>(v.ng!=null)?Math.max(0,v.ng):(v.seguro?1:0);
 
-  // Lo que se cobra al mes por una responsabilidad de tienda, aparte de las ventas
-  function plusMes(){
-    const v=Number(state.plus);
+  // Lo que se cobra por una responsabilidad de tienda, aparte de las ventas.
+  // Cambia de un mes a otro (150 € uno, 100 € otro), así que va con el mes.
+  function plusDe(mk){
+    const v=Number(((state.overrides||{})[mk]||{}).plus);
     return (v>0&&isFinite(v))?round2(v):0;
+  }
+  // El plus era uno para todos los meses. Pasa a cada mes que ya tenía datos,
+  // hasta el actual incluido, para que el historial no cambie; desde aquí,
+  // cada mes lleva el suyo.
+  function migrarPlus(){
+    if(!("plus" in state)) return 0;
+    const v=Number(state.plus);
+    if(v>0&&isFinite(v)){
+      const hasta=monthKey(now.getFullYear(),now.getMonth());
+      const meses=new Set(state.ventas.map(x=>String(x.date).slice(0,7)));
+      Object.keys(state.overrides||{}).forEach(k=>meses.add(k));
+      meses.add(hasta);
+      meses.forEach(mk=>{
+        if(!/^\d{4}-\d{2}$/.test(mk)||mk>hasta) return;
+        const o=state.overrides[mk]=state.overrides[mk]||{};
+        if(o.plus==null) o.plus=round2(v);
+      });
+    }
+    delete state.plus;
+    save();
+    return 1;
   }
   // Datos de la Parte 4 que se han puesto para un mes, ya limpios: lo que
   // falta o no es un número queda en null y ese multiplicador cuenta × 1.
@@ -1369,7 +1414,9 @@
       obj:n(o.obj)>0?n(o.obj):null,
       tienda:o.tienda===true?true:(o.tienda===false?false:null),
       resenas:n(o.resenas), llamadas:n(o.llamadas), calidad:n(o.calidad), repar:n(o.repar),
-      del:["grande","mediana","pequena"].includes(state.delegacion)?state.delegacion:null
+      del:["grande","mediana","pequena"].includes(state.delegacion)?state.delegacion:null,
+      // El plus de responsabilidad del mes viaja con el resto de datos del mes
+      plus:plusDe(mk)
     };
   }
   // Los cuatro multiplicadores colectivos. Cada uno es null mientras no haya
@@ -1427,7 +1474,7 @@
     }
     // El plus de responsabilidad se suma al final: no multiplica ni depende
     // de los tramos, se cobra igual
-    const plus=plusMes();
+    const plus=X&&X.plus>0?X.plus:0;
     return {F,X,tF,tS,parte1,parte2,mCare,mSeg,parte3,p4,col,porVentas,plus,total:round2(porVentas+plus)};
   }
   function computeMonth(y,m){
@@ -1507,7 +1554,7 @@
     const extra=[], pieza=(v,lbl,kind)=>'<span class="cx '+kind+'"><b class="num">'+v+"</b> "+lbl+"</span>";
     if(c.p4){
       // Solo los que cambian algo: un × 1 o uno sin datos no aporta al desglose
-      [["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SAT"]].forEach(([k,lbl])=>{
+      [["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SVT"]].forEach(([k,lbl])=>{
         const m=c.p4[k];
         if(m!=null&&m!==1) extra.push(pieza("×&nbsp;"+fmtMult.format(m),lbl,m>1?"hi":"lo"));
       });
@@ -1923,7 +1970,7 @@
   function borradorP4(){
     const n=id=>{ const v=parseDec($(id).value); return isNaN(v)?null:Math.max(0,v); };
     const obj=n("metaInput");
-    return {obj:obj>0?Math.round(obj*100)/100:null, tienda:p4Tienda,
+    return {plus:plusDe(monthKey(view.y,view.m)), obj:obj>0?Math.round(obj*100)/100:null, tienda:p4Tienda,
       resenas:n("p4Resenas")==null?null:Math.round(n("p4Resenas")),
       llamadas:n("p4Llamadas"), calidad:n("p4Calidad"), repar:n("p4Repar"), del:p4Del};
   }
@@ -2062,7 +2109,7 @@
     tile.hidden=!c.p4;
     if(!c.p4) return;
     const r=c.p4, X=c.X;
-    $("p4Chips").innerHTML=[["obj","Objetivos"],["res","Reseñas"],["tel","Teléfono"],["sat","SAT"]].map(([k,lbl])=>{
+    $("p4Chips").innerHTML=[["obj","Objetivos"],["res","Reseñas"],["tel","Teléfono"],["sat","SVT"]].map(([k,lbl])=>{
       const m=r[k];
       return '<span class="p4c '+(m==null?"":(m>1?"hi":(m<1?"lo":"eq")))+'"><span class="k">'+lbl+'</span>'
         +'<span class="m">'+(m==null?"—":"× "+fmtMult.format(m))+"</span></span>";
@@ -3088,7 +3135,7 @@
       obj=" · Objetivo "+fmtEUR0.format(X.obj)+(c.fact+1e-9>=X.obj?" ✓":(mesCerrado(view.y,view.m)?" (a "+falta+")":" (faltan "+falta+")"));
     }
     // De la Parte 4, solo los que cambian algo, igual que en el desglose
-    const p4=c.p4?[["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SAT"]]
+    const p4=c.p4?[["obj","objetivos"],["res","reseñas"],["tel","teléfono"],["sat","SVT"]]
       .filter(([k])=>c.p4[k]!=null&&c.p4[k]!==1).map(([k,l])=>l+" × "+fmtMult.format(c.p4[k])):[];
     const txt="📊 "+monthName(view.y,view.m)
       +" · Facturación "+fmtEUR0.format(c.fact)
@@ -3127,7 +3174,10 @@
     $("cfgDesde").value=fo.desde||"";
     $("cfgLibro").value=String(libraSemana());
     $("cfgIva").value=String(ivaPct()).replace(".",",");
-    $("cfgPlus").value=plusMes()?String(plusMes()).replace(".",","):"";
+    const plusAhora=plusDe(monthKey(view.y,view.m));
+    $("cfgPlusLbl").textContent="Plus · "+monthName(view.y,view.m)+" (€)";
+    $("cfgPlus").value=plusAhora?String(plusAhora).replace(".",","):"";
+    pintarPlusPrev();
     aplicarTema();
     $("cfgFueraLbl").textContent="Festivos y vacaciones · "+monthName(view.y,view.m);
     const f=diasFuera(view.y,view.m);
@@ -3151,6 +3201,16 @@
     if(abrir) $("cfgVerTablas").scrollIntoView({block:"start",behavior:reducedMotion()?"auto":"smooth"});
   };
   $("btnCfg").onclick=()=>openCfg();
+  // Con el plus del mes vacío se ofrece el del último mes que lo tenga, de un toque
+  function pintarPlusPrev(){
+    const mk=monthKey(view.y,view.m), b=$("cfgPlusPrev");
+    let ant=null;
+    Object.keys(state.overrides||{}).forEach(k=>{ if(k<mk&&plusDe(k)>0&&(!ant||k>ant)) ant=k; });
+    b.hidden=!ant||!!$("cfgPlus").value.trim();
+    if(ant){ const a=mesDeKey(ant); b.textContent="Como en "+nombreMes(a.y,a.m)+": "+fmtEUR0.format(plusDe(ant)); b.dataset.v=plusDe(ant); }
+  }
+  $("cfgPlusPrev").onclick=()=>{ $("cfgPlus").value=String($("cfgPlusPrev").dataset.v).replace(".",","); pintarPlusPrev(); };
+  $("cfgPlus").addEventListener("input",pintarPlusPrev);
   $("cfgReset").onclick=()=>{ openCfg(clone(DEF_CFG)); toast("Valores del PDF puestos: falta Guardar"); };
   $("cfgSave").onclick=()=>{
     const val=(id,fb)=>{ const el=$(id); if(!el) return fb; const v=parseDec(el.value); return isNaN(v)?fb:v; };
@@ -3163,11 +3223,10 @@
     nc.desde=/^\d{4}-\d{2}$/.test(de)?de:null;
     state.libro=Math.max(0,Math.min(6,Math.round(val("cfgLibro",libraSemana()))));
     state.iva=Math.max(0,Math.min(99,val("cfgIva",ivaPct())));
-    const pl=parseDec($("cfgPlus").value);
-    if(isNaN(pl)||pl<=0) delete state.plus; else state.plus=Math.max(0,Math.round(pl*100)/100);
-    const mkc=monthKey(view.y,view.m), fu=parseDec($("cfgFuera").value);
+    const mkc=monthKey(view.y,view.m), fu=parseDec($("cfgFuera").value), pl=parseDec($("cfgPlus").value);
     const oc=state.overrides[mkc]=state.overrides[mkc]||{};
     if(isNaN(fu)||fu<=0) delete oc.fuera; else oc.fuera=Math.max(0,Math.round(fu));
+    if(isNaN(pl)||pl<=0) delete oc.plus; else oc.plus=Math.max(0,Math.round(pl*100)/100);
     if(!Object.keys(oc).length) delete state.overrides[mkc];
     // Los topes deben ir de menor a mayor para que los tramos tengan sentido
     const asc=a=>a.every((t,i)=>i===0||t.hasta==null||a[i-1].hasta==null||t.hasta>a[i-1].hasta);
@@ -3199,7 +3258,7 @@
       +"<tr><td>"+pc(P.tel.alto)+" o más, con nota "+n(P.tel.calidad)+" o más</td><td>"+x(P.tel.mult[2])+"</td></tr>"
       +"<tr><td>"+pc(P.tel.min)+" – "+pc(P.tel.alto)+", con nota "+n(P.tel.calidad)+" o más</td><td>"+x(P.tel.mult[1])+"</td></tr>"
       +"<tr><td>menos del "+pc(P.tel.min)+" o nota por debajo de "+n(P.tel.calidad)+"</td><td>"+x(P.tel.mult[0])+"</td></tr></table>"
-      +'<p style="margin-top:10px"><b>Reparaciones del servicio técnico</b>:</p><table>'
+      +'<p style="margin-top:10px"><b>Reparaciones del servicio técnico (SVT)</b>:</p><table>'
       +"<tr><td>"+pc(P.sat.alto)+" o más</td><td>"+x(P.sat.mult[2])+"</td></tr>"
       +"<tr><td>"+pc(P.sat.min)+" – "+pc(P.sat.alto)+"</td><td>"+x(P.sat.mult[1])+"</td></tr>"
       +"<tr><td>menos del "+pc(P.sat.min)+"</td><td>"+x(P.sat.mult[0])+"</td></tr></table>"
@@ -3233,14 +3292,27 @@
   }
   $("btnInfo").onclick=()=>{ fillInfoTables(); document.getElementById("dlgInfo").showModal(); };
 
-  $("btnExport").onclick=()=>{
-    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  $("btnExport").onclick=async ()=>{
+    const json=JSON.stringify(state,null,2), nombre="incentivos-"+todayISO()+".json";
+    const hecho=msg=>{ state.lastExport=todayISO(); save(); toast(msg); };
+    // En el móvil, la hoja de compartir: te la mandas por WhatsApp o correo, o la
+    // guardas en iCloud. Lo que protege los datos es que la copia salga del móvil;
+    // una descarga en la app instalada del iPhone se queda a medias.
+    try{
+      const f=new File([json],nombre,{type:"application/json"});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){
+        await navigator.share({files:[f],title:"Copia de Mis Incentivos"});
+        hecho("Copia guardada ✓"); return;
+      }
+    }catch(e){ if(e&&e.name==="AbortError") return; }
+    // Sin hoja de compartir (el ordenador), se descarga
+    const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download="incentivos-"+todayISO()+".json";
-    a.click(); URL.revokeObjectURL(a.href);
-    state.lastExport=todayISO(); save();
-    toast("Copia descargada ✓");
+    a.href=url; a.download=nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    // Safari necesita el enlace vivo un momento para empezar la descarga
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    hecho("Copia descargada ✓");
   };
   $("btnImport").onclick=()=>$("fileImport").click();
   function sanitizeVentas(arr){
@@ -3274,6 +3346,7 @@
           const snap=snapshot();
           state={ventas,overrides:(d.overrides&&typeof d.overrides==="object")?d.overrides:{},lastExport:d.lastExport,usos:(d.usos&&typeof d.usos==="object")?d.usos:{},libro:(d.libro>=0&&d.libro<=6)?Math.round(d.libro):undefined,iva:(d.iva>=0&&d.iva<100)?Number(d.iva):undefined,plus:(d.plus>0)?Number(d.plus):undefined,delegacion:["grande","mediana","pequena"].includes(d.delegacion)?d.delegacion:undefined,tema:(d.tema==="light"||d.tema==="dark")?d.tema:undefined,propios:Array.isArray(d.propios)?d.propios.filter(x=>x&&typeof x.n==="string").map(x=>({n:x.n,p:Number(x.p)||0,s:Number(x.s)||0,c:(x.c==="c"||x.c==="g")?x.c:"",sku:typeof x.sku==="string"?x.sku:""})):[]};
           migrarBases();
+          migrarPlus();
           construirIndice();
           // Una copia de antes del PDF trae la fórmula del email: pasa a los meses
           // de antes, igual que al abrir la app. Sin fórmula, se quedan las de ahora.
@@ -3296,9 +3369,13 @@
       const snap=snapshot();
       state.ventas=state.ventas.filter(v=>!v.date.startsWith(mk));
       // El objetivo y los datos de la tienda no son apuntes tuyos: se quedan
-      const p4=(state.overrides[mk]||{}).p4;
+      // El objetivo, los datos de la tienda, el plus y los festivos no son
+      // apuntes tuyos: se quedan
+      const o=state.overrides[mk]||{}, queda={};
+      if(o.p4&&!o.p4.demo) queda.p4=o.p4;
+      ["plus","fuera"].forEach(k=>{ if(o[k]!=null) queda[k]=o[k]; });
       delete state.overrides[mk];
-      if(p4&&!p4.demo) state.overrides[mk]={p4};
+      if(Object.keys(queda).length) state.overrides[mk]=queda;
       save(); resetForm(); render();
       toast("Mes borrado","Deshacer",()=>restore(snap),8000);
     }
@@ -3329,15 +3406,35 @@
     $("installTip").hidden=true;
     try{ localStorage.setItem("incentivos:tip","off"); }catch(e){}
   };
-  // Recordatorio de copia si hace más de 30 días (o nunca) y ya hay ventas apuntadas.
+  // Recordatorio de copia si hace más de dos semanas (o nunca) y ya hay ventas apuntadas.
   // Espera un poco y no pisa un aviso en curso: es lo menos urgente de la app.
   setTimeout(()=>{
     if(!state.ventas.length) return;
     if(document.getElementById("toast").classList.contains("show")) return;
     const last=state.lastExport;
     const days=last?(Date.now()-new Date(last+"T12:00:00").getTime())/86400000:999;
-    if(days>30) toast("Haz una copia de tus ventas","Exportar",()=>$("btnExport").click(),8000);
+    if(days>14) toast("Guarda una copia de tus ventas","Guardar",()=>$("btnExport").click(),8000);
   },9000);
+
+  /* ===== Novedades: una vez tras cada actualización con cambios que contar ===== */
+  // Se sube cuando hay algo nuevo que enseñar. Lo visto va aparte de los datos:
+  // es de este móvil y no viaja en las copias.
+  const NOVEDADES="2026-11";
+  const NOV_KEY="incentivos:novedades";
+  function verNovedades(estrena){
+    let visto="";
+    try{ visto=localStorage.getItem(NOV_KEY)||""; }catch(e){ return; }
+    if(visto>=NOVEDADES) return;
+    const marcar=()=>{ try{ localStorage.setItem(NOV_KEY,NOVEDADES); }catch(e){} };
+    // A quien estrena la app todo es nuevo: no hace falta contárselo. Se mira al
+    // abrir, no al enseñarlas: si apunta algo en ese medio segundo sigue siendo nuevo
+    if(estrena){ marcar(); return; }
+    const dlg=document.getElementById("dlgNovedades");
+    if(document.querySelector("dialog[open]")) return;
+    $("novOk").onclick=()=>{ marcar(); dlg.close(); };
+    dlg.oncancel=()=>marcar();
+    dlg.showModal();
+  }
 
   /* ===== Init ===== */
   // Se lee antes de resetForm, que es quien limpia el borrador
@@ -3346,10 +3443,15 @@
   aplicarTema();
   const corregidos=migrarSueltos();
   migrarBases();
+  migrarPlus();
   resetForm();
   render();
   if(corregidos) toast(corregidos+" apunte"+(corregidos===1?"":"s")+" corregido"+(corregidos===1?"":"s")+" a Libre",null,null,5000);
   else if(borrador&&restaurarBorrador(borrador)) toast("Recuperado lo que estabas apuntando");
+  // A quien estrena la app se le dan por vistas ya, al abrir; a los demás se
+  // les enseñan un momento después, para que se vea la app detrás
+  if(!state.ventas.length) verNovedades(true);
+  else setTimeout(()=>verNovedades(false),500);
 
   // Modo sin conexión (solo cuando se sirve desde un servidor con sw.js, p.ej. GitHub Pages)
   if("serviceWorker" in navigator && location.protocol==="https:"){
